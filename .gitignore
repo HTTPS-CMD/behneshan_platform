@@ -1,0 +1,14 @@
+# Backend (Django)
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
+.env
+
+# Frontend (Next.js)
+node_modules/
+.next/
+out/
+.env.local
+.env.development
+.env.production
