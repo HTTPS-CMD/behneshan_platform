@@ -11,4 +11,8 @@ node_modules/
 out/
 .env.local
 .env.development
-.env.production
+.env.production__pycache__/
+*.py[cod]
+*$py.class
+*.DS_Store
+.env
