@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/v1/directory/', include('apps.directory.urls')),
     path('api/v1/taxonomy/', include('apps.taxonomy.urls')),
     path('api/v1/cms/', include('apps.cms.urls')),
+    path('api/v1/analytics/', include('analytics.urls')),  # اضافه شد برای مسیرهای آنالیتیکس
 ]
 
 # این بخش برای نمایش عکس‌ها در حالت توسعه اضافه شد

@@ -1,10 +1,35 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+import requests
+from django.conf import settings
 from .models import Business, SubscriptionPlan, CustomerProfile, TransactionLog
+
+
+
+@admin.action(description='🧹 اعمال تغییرات در سایت (پاکسازی کش)')
+def clear_frontend_cache(modeladmin, request, queryset):
+    # آدرس و رمز از فایل .env خوانده می‌شود
+    frontend_url = settings.FRONTEND_REVALIDATE_URL
+    payload = {
+        "secret": settings.REVALIDATION_SECRET,
+    }
+    
+    try:
+        response = requests.post(frontend_url, json=payload, timeout=5)
+        if response.status_code == 200:
+            modeladmin.message_user(request, "تغییرات با موفقیت در سایت اصلی اعمال شد.", messages.SUCCESS)
+        else:
+            modeladmin.message_user(request, f"خطا در پاکسازی کش: {response.text}", messages.ERROR)
+    except requests.exceptions.RequestException as e:
+        modeladmin.message_user(request, f"عدم ارتباط با سرور فرانت‌اند. مطمئن شوید فرانت‌اند ران است.", messages.ERROR)
+
+
 
 @admin.register(Business)
 class BusinessAdmin(admin.ModelAdmin):
-    list_display = ('name', 'is_verified', 'is_premium')
+    list_display = ('name', 'is_verified', 'is_premium', 'slug')
     search_fields = ('name',)
+    
+    actions = [clear_frontend_cache]  # اضافه کردن اکشن پاکسازی کش به مدل Business
     
 # --- اضافه شده برای مدیریت سیستم VIP و CRM ---
 

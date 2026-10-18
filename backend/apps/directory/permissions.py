@@ -19,7 +19,7 @@ class IsSuperAdminRole(permissions.BasePermission):
             request.user and 
             request.user.is_authenticated and 
             hasattr(request.user, 'role') and 
-            request.user.role in ['BUSINESS_OWNER', 'ADMIN', 'superadmin']
+            request.user.role == 'ADMIN'
         )
 
 class IsBusinessOwnerRole(permissions.BasePermission):

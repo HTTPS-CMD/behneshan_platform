@@ -1,12 +1,25 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-your-secret-key-here'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+# ==========================================
+# خواندن تنظیمات حساس از فایل backend/.env
+# ==========================================
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+SECRET_KEY = env('SECRET_KEY')
+DEBUG = env.bool('DEBUG', default=False)
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+
+# کلید سرویس api.ir (شاهکار و پیامک)
+API_IR_KEY = env('API_IR_KEY')
+# رمز پاکسازی کش فرانت (باید با REVALIDATION_SECRET در frontend/.env.local یکی باشد)
+REVALIDATION_SECRET = env('REVALIDATION_SECRET')
+FRONTEND_REVALIDATE_URL = env('FRONTEND_REVALIDATE_URL', default='http://localhost:3000/api/revalidate')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -22,6 +35,7 @@ INSTALLED_APPS = [
     'apps.taxonomy', # ماژول جدید ما
     'corsheaders',  # برای مدیریت CORS
     'apps.cms',  # ماژول CMS برای مدیریت تنظیمات سایت، منوها و بنرها
+    'analytics',  # برای جمع‌آوری آمار بازدید و رفتار کاربران
 ]
 
 # معرفی مدل کاربر اختصاصی به جنگو
@@ -31,13 +45,19 @@ AUTH_USER_MODEL = 'identity.User'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'behneshan_db',
-        'USER': 'behneshan_user',
-        'PASSWORD': '@12345Bb',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'NAME': env('DB_NAME', default='behneshan_db'),
+        'USER': env('DB_USER', default='behneshan_user'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST', default='127.0.0.1'),
+        'PORT': env('DB_PORT', default='5432'),
+    }
+}
+
+# کش (برای OTP و محدودیت درخواست‌ها) روی Redis
+CACHES = {
+    'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'LOCATION': env('REDIS_URL', default='redis://127.0.0.1:6379/1'),
     }
 }
 
@@ -46,16 +66,24 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    # محدودیت کلی تعداد درخواست
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '120/minute',
+        'user': '300/minute',
+    },
 }
-from datetime import timedelta
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'AUTH_COOKIE': 'access_token',
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# بقیه کدهای پایین فایل (MIDDLEWARE, TEMPLATES و...) را تغییر ندهید.
 
 # ==========================================
 # تنظیمات پیش‌فرض جنگو که پاک شده بودند
@@ -96,10 +124,18 @@ WSGI_APPLICATION = 'core_project.wsgi.application'
 # ==========================================
 # تنظیمات CORS
 # ==========================================
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-]
+])
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=CORS_ALLOWED_ORIGINS)
+
+# اگر Nginx جلوی جنگو است، IP و پروتکل واقعی را از هدرها بخوان
+USE_X_FORWARDED_HOST = env.bool('USE_X_FORWARDED_HOST', default=False)
+
+# محدودیت حجم آپلود (۲۰ مگابایت)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 # این گزینه اجازه می‌دهد کوکی‌های امنیتی (مثل توکن لاگین) بین فرانت و بک رد و بدل شوند
 CORS_ALLOW_CREDENTIALS = True
@@ -113,6 +149,7 @@ USE_TZ = True
 
 # مسیر فایل‌های استاتیک (مثل CSS های پنل ادمین)
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Media files (Uploads)
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

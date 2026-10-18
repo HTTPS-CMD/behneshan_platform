@@ -1,5 +1,39 @@
+import os
 from rest_framework import serializers
 from .models import Business, Review, SiteContent
+
+# --- اعتبارسنجی فایل‌های آپلودی ---
+IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.webp'}
+VIDEO_EXTS = {'.mp4', '.webm'}
+MAX_IMAGE_MB = 5
+MAX_VIDEO_MB = 20
+
+
+def validate_upload(f, allowed_exts, max_mb):
+    if not f:
+        return f
+    ext = os.path.splitext(f.name)[1].lower()
+    if ext not in allowed_exts:
+        raise serializers.ValidationError(f"فرمت فایل مجاز نیست. فرمت‌های مجاز: {', '.join(sorted(allowed_exts))}")
+    if f.size > max_mb * 1024 * 1024:
+        raise serializers.ValidationError(f"حجم فایل نباید بیشتر از {max_mb} مگابایت باشد.")
+    if ext in IMAGE_EXTS:
+        try:
+            from PIL import Image
+            img = Image.open(f)
+            img.verify()
+            f.seek(0)
+        except Exception:
+            raise serializers.ValidationError("فایل تصویر معتبر نیست.")
+    return f
+
+
+class ImageFieldsValidationMixin:
+    def validate_logo(self, value):
+        return validate_upload(value, IMAGE_EXTS, MAX_IMAGE_MB)
+
+    def validate_banner(self, value):
+        return validate_upload(value, IMAGE_EXTS, MAX_IMAGE_MB)
 from apps.taxonomy.models import Category, Location
 from .models import DiscountCampaign, CampaignUsage, TransactionLog, SubscriptionPlan, CustomerProfile, SubscriptionPlan
 # from apps.taxonomy.serializers import CategorySerializer, LocationSerializer
@@ -17,7 +51,7 @@ class LocationSerializer(serializers.ModelSerializer):
 class BusinessListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     location = LocationSerializer(read_only=True)
-    # ۱. تعریف فیلد داینامیک جدید
+    followers_count = serializers.IntegerField(source='followers.count', read_only=True)
     active_campaign = serializers.SerializerMethodField() 
 
     class Meta:
@@ -25,7 +59,7 @@ class BusinessListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug', 'description', 'average_rating', 
             'review_count', 'is_verified', 'is_premium', 'category', 'location', 'logo', 'banner',
-            'active_campaign' # ۲. اضافه کردن به خروجی
+            'active_campaign', 'establishment_year', 'followers_count' # ۲. اضافه کردن به خروجی
         ]
 
     # ۳. متد برای پیدا کردن بهترین کمپین فعال این کسب‌وکار
@@ -43,7 +77,7 @@ class BusinessListSerializer(serializers.ModelSerializer):
 
 
 # این کلاس را به انتهای فایل اضافه کن
-class BusinessCreateSerializer(serializers.ModelSerializer):
+class BusinessCreateSerializer(ImageFieldsValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = Business
         fields = ['name', 'slug', 'description', 'category', 'location', 'logo', 'banner']
@@ -72,7 +106,7 @@ class BusinessSerializer(serializers.ModelSerializer):
         return None
     
 
-class BusinessUpdateSerializer(serializers.ModelSerializer):
+class BusinessUpdateSerializer(ImageFieldsValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = Business
         # تمام فیلدهایی که در فرانت‌اند دارید باید اینجا لیست شوند
@@ -197,6 +231,9 @@ class StorySerializer(serializers.ModelSerializer):
         fields = ['id', 'business', 'media', 'link', 'created_at', 'is_active']
         read_only_fields = ['business', 'created_at']
 
+    def validate_media(self, value):
+        return validate_upload(value, IMAGE_EXTS | VIDEO_EXTS, MAX_VIDEO_MB)
+
     def create(self, validated_data):
         request = self.context.get('request')
         
@@ -225,3 +262,27 @@ class PublicStorySerializer(serializers.ModelSerializer):
         if obj.business.logo and request:
             return request.build_absolute_uri(obj.business.logo.url)
         return None
+    
+    
+from .models import Product, BusinessRequest
+
+class ProductSerializer(serializers.ModelSerializer):
+    final_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ['id', 'business', 'name', 'price', 'discount_percentage', 'is_flash_sale', 'final_price', 'created_at']
+        read_only_fields = ['business', 'created_at']
+
+    def get_final_price(self, obj):
+        if obj.discount_percentage > 0:
+            return int(obj.price * (100 - obj.discount_percentage) / 100)
+        return obj.price
+
+class BusinessRequestSerializer(serializers.ModelSerializer):
+    request_type_display = serializers.CharField(source='get_request_type_display', read_only=True)
+
+    class Meta:
+        model = BusinessRequest
+        fields = ['id', 'business', 'request_type', 'request_type_display', 'description', 'is_approved', 'created_at']
+        read_only_fields = ['business', 'is_approved', 'created_at']
