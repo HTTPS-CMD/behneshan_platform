@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from .models import Category, Location
 from .serializers import CategorySerializer, LocationSerializer
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import IsAdminUser
 
 class CategoryListView(APIView):
     def get(self, request):

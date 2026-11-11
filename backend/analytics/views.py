@@ -1,4 +1,3 @@
-from django.shortcuts import render
 
 # Create your views here.
 from rest_framework.views import APIView
@@ -59,7 +58,8 @@ class AnalyticsDashboardAPIView(APIView):
                 "username": getattr(log.user, 'full_name', None) or getattr(log.user, 'phone_number', 'کاربر'),
                 "ip_address": log.ip_address or "نامشخص",
                 "timestamp": log.timestamp,
-                "user_agent": log.user_agent or "نامشخص"
+                "user_agent": log.user_agent or "نامشخص",
+                "role": getattr(log.user, 'role', None),
             } for log in recent_logins
         ]
 

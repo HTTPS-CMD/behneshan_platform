@@ -21,6 +21,11 @@ API_IR_KEY = env('API_IR_KEY')
 REVALIDATION_SECRET = env('REVALIDATION_SECRET')
 FRONTEND_REVALIDATE_URL = env('FRONTEND_REVALIDATE_URL', default='http://localhost:3000/api/revalidate')
 
+# سامانه پیامکی (باشگاه مشتریان): console برای تست، یا kavenegar / smsir
+SMS_PROVIDER = env('SMS_PROVIDER', default='console')
+SMS_API_KEY = env('SMS_API_KEY', default='')
+SMS_LINE_NUMBER = env('SMS_LINE_NUMBER', default='')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -30,12 +35,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # باطل کردن refresh توکن‌ها هنگام خروج و چرخش (H6)
     'apps.identity', # ماژول جدید ما
     'apps.directory', # ماژول جدید ما
     'apps.taxonomy', # ماژول جدید ما
     'corsheaders',  # برای مدیریت CORS
     'apps.cms',  # ماژول CMS برای مدیریت تنظیمات سایت، منوها و بنرها
     'analytics',  # برای جمع‌آوری آمار بازدید و رفتار کاربران
+    'apps.notifications',  # سیستم اعلان‌های پنل‌ها (زنگوله)
+    'apps.loyalty',  # باشگاه مشتریان: کش‌بک، کیف‌پول، شعب و تراکنش‌ها
+    'apps.seo',  # سئو: داده‌ی سایت‌مپ (و بعداً تنظیمات سئوی صفحات)
 ]
 
 # معرفی مدل کاربر اختصاصی به جنگو
@@ -74,13 +83,25 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '120/minute',
         'user': '300/minute',
+        'otp_request': '5/minute',   # درخواست کد پیامکی
+        'otp_verify': '10/minute',   # بررسی کد پیامکی
+        'token_refresh': '30/minute',  # تمدید نشست
     },
+    # تعداد پروکسیِ مورد اعتماد جلوی جنگو؛ لوکال 0، روی سرور پشت Nginx باید 1 باشد
+    'NUM_PROXIES': env.int('NUM_PROXIES', default=0),
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    # access کوتاه‌عمر است و فقط در حافظه‌ی مرورگر نگه داشته می‌شود؛ refresh در کوکی httpOnly می‌ماند (H6)
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'AUTH_COOKIE': 'access_token',
+    # هر بار رفرش، refresh جدید ساخته و قبلی باطل می‌شود؛ refresh دزدیده‌شده بعد از اولین استفاده بی‌اثر است
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
+    'ALGORITHM': 'HS256',
+    # کلید امضا؛ باید با JWT_SIGNING_KEY در frontend/.env.local یکی باشد (proxy.ts امضا را بررسی می‌کند)
+    'SIGNING_KEY': env('JWT_SIGNING_KEY', default=SECRET_KEY),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
@@ -153,3 +174,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Media files (Uploads)
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# پنل «سلامت و بکاپ»: پوشه‌هایی که agent.sh روی سرور می‌نویسد (داخل کانتینر mount می‌شوند)
+OPS_DATA_DIR = env('OPS_DATA_DIR', default='/opsdata')
+OPS_BACKUP_DIR = env('OPS_BACKUP_DIR', default='/backups')

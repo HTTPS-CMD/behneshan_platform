@@ -68,9 +68,9 @@ export default function ClearCacheButton() {
             exit={{ opacity: 0, height: 0 }}
             className="mt-2 px-4"
           >
-            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2">
+            <div className="w-full h-1.5 bg-brand-800 rounded-full overflow-hidden mb-2">
               <motion.div
-                className={`h-full ${status === 'error' ? 'bg-rose-500' : status === 'success' ? 'bg-emerald-500' : 'bg-amber-400'}`}
+                className={`h-full ${status === 'error' ? 'bg-rose-500' : status === 'success' ? 'bg-brand-500' : 'bg-amber-400'}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ ease: "linear", duration: 0.3 }}
@@ -79,8 +79,8 @@ export default function ClearCacheButton() {
             
             <div className="flex items-center gap-2 text-[11px] font-bold">
               {status === 'error' && <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />}
-              {status === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-              <span className={`${status === 'error' ? 'text-rose-500' : status === 'success' ? 'text-emerald-500' : 'text-slate-400'}`}>
+              {status === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-brand-500 shrink-0" />}
+              <span className={`${status === 'error' ? 'text-rose-500' : status === 'success' ? 'text-brand-500' : 'text-slate-400'}`}>
                 {message}
               </span>
             </div>

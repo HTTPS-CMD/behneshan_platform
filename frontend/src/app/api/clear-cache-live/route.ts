@@ -1,27 +1,18 @@
 import { revalidatePath } from "next/cache";
 import fs from "fs/promises";
 import path from "path";
+import { verifyJwt } from "@/lib/server/jwt";
 
 // جلوگیری از کش شدن خود این API
 export const dynamic = 'force-dynamic';
 
-// آدرس بک‌اند برای بررسی اینکه درخواست‌دهنده واقعاً ادمین است
-const BACKEND_API = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8000/api/v1";
-
+// ادمین بودن از امضای refresh توکن (کوکی httpOnly) و claim نقش بررسی می‌شود (H6)
 async function isAdmin(req: Request): Promise<boolean> {
   const cookie = req.headers.get("cookie") || "";
-  const match = cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
+  const match = cookie.match(/(?:^|;\s*)refresh_token=([^;]+)/);
   if (!match) return false;
-  try {
-    // این endpoint فقط برای کاربران is_staff جواب 200 می‌دهد
-    const res = await fetch(`${BACKEND_API}/identity/admin/users/?limit=1`, {
-      headers: { Authorization: `Bearer ${decodeURIComponent(match[1])}` },
-      cache: "no-store",
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  const payload = await verifyJwt(decodeURIComponent(match[1]), "refresh");
+  return payload?.role === "ADMIN";
 }
 
 export async function GET(req: Request) {

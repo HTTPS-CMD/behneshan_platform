@@ -62,3 +62,60 @@ class Banner(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.get_position_display()}"
+
+
+class LandingPage(models.Model):
+    """محتوای قابل ویرایش صفحه‌ی لندینگ (/landing) — فقط یک رکورد دارد"""
+    id = models.BigAutoField(primary_key=True)
+    content = models.JSONField(default=dict, blank=True, verbose_name="محتوا")
+    hero_image = models.ImageField(upload_to='cms/landing/', null=True, blank=True, verbose_name="تصویر پس‌زمینه‌ی هیرو")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'cms_landing_page'
+        verbose_name = "صفحه‌ی لندینگ"
+        verbose_name_plural = "صفحه‌ی لندینگ"
+
+    def __str__(self):
+        return "محتوای صفحه‌ی لندینگ"
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class ContactMessage(models.Model):
+    """پیام‌های دریافتی از فرم «تماس با ما» (صندوق پیام پنل ادمین)"""
+    ROLE_CHOICES = (
+        ('merchant', 'کاسب'),
+        ('customer', 'مشتری'),
+        ('org', 'سازمان'),
+        ('other', 'سایر'),
+    )
+    SUBJECT_CHOICES = (
+        ('merchant_signup', 'ثبت‌نام کاسبان'),
+        ('card', 'خرید و ارتقای کارت'),
+        ('ads', 'تبلیغات و مشاوره'),
+        ('cooperation', 'همکاری'),
+        ('feedback', 'پیشنهاد و انتقاد'),
+        ('other', 'سایر'),
+    )
+
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=120, verbose_name="نام و نام خانوادگی")
+    phone = models.CharField(max_length=11, verbose_name="شماره موبایل")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True, default='', verbose_name="نقش")
+    subject = models.CharField(max_length=30, choices=SUBJECT_CHOICES, default='other', verbose_name="موضوع پیام")
+    message = models.TextField(verbose_name="متن پیام")
+    is_read = models.BooleanField(default=False, verbose_name="خوانده شده؟")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="زمان ثبت")
+
+    class Meta:
+        db_table = 'cms_contact_messages'
+        ordering = ['-created_at']
+        verbose_name = "پیام تماس"
+        verbose_name_plural = "پیام‌های تماس"
+
+    def __str__(self):
+        return f"{self.name} - {self.get_subject_display()}"

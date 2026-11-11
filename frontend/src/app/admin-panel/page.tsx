@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
-import Cookies from "js-cookie";
 import Link from "next/link";
-import AdminMenus from "./menus/page";
-import AdminSettings from "./settings/page";
-import AdminContentSettings from "./content/page";
+import AdminMenus from "@/components/admin/AdminMenus";
+import AdminSettings from "@/components/admin/AdminSettings";
+import AdminPagesContent from "@/components/admin/AdminPagesContent";
+import AdminLandingEditor from "@/components/admin/AdminLandingEditor";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toaster";
+import { mediaUrl } from "@/lib/format";
 
 export default function SuperAdminPanel() {
   const { isAuthenticated, role, logout } = useAuthStore();
@@ -19,6 +21,8 @@ export default function SuperAdminPanel() {
   const [isMounted, setIsMounted] = useState(false);
 
   const [activeTab, setActiveTab] = useState("businesses");
+  // زیربخش‌های تب «محتوای سایت» (قبلاً ۴ تب جدا بودند)
+  const [contentTab, setContentTab] = useState("banners");
 
   const [allBusinesses, setAllBusinesses] = useState<any[]>([]);
   const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(false);
@@ -52,10 +56,7 @@ export default function SuperAdminPanel() {
 
   const checkDemoStatus = async () => {
     try {
-      const token = Cookies.get("access_token");
-      const res = await api.get("/directory/admin/toggle-demo-data/", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get("/directory/admin/toggle-demo-data/");
       setHasDemoData(res.data.has_demo);
     } catch (error) {
       console.error("خطا در بررسی وضعیت دمو", error);
@@ -65,16 +66,13 @@ export default function SuperAdminPanel() {
   const handleToggleDemoData = async () => {
     setIsTogglingDemo(true);
     try {
-      const token = Cookies.get("access_token");
-      const res = await api.post("/directory/admin/toggle-demo-data/", {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.post("/directory/admin/toggle-demo-data/", {});
       setHasDemoData(res.data.has_demo);
-      alert(res.data.message);
+      toast.success(res.data.message);
       fetchAllBusinesses();
       fetchAdminCategories();
     } catch (error) {
-      alert("خطا در تغییر وضعیت داده‌های نمونه.");
+      toast.error("خطا در تغییر وضعیت داده‌های نمونه.");
     } finally {
       setIsTogglingDemo(false);
     }
@@ -88,14 +86,14 @@ export default function SuperAdminPanel() {
     if (isMounted) {
       if (!isAuthenticated) {
         router.push("/login");
-      } else if (role !== "admin" && role !== "superadmin" && role !== "ADMIN") {
+      } else if (role !== "ADMIN") {
         router.push("/");
       }
     }
   }, [isMounted, isAuthenticated, role, router]);
 
   useEffect(() => {
-    if (isMounted && isAuthenticated && (role === "admin" || role === "superadmin" || role === "ADMIN")) {
+    if (isMounted && isAuthenticated && role === "ADMIN") {
       if (activeTab === "businesses") {
         fetchAllBusinesses();
         checkDemoStatus();
@@ -104,20 +102,17 @@ export default function SuperAdminPanel() {
         fetchAdminCategories();
         fetchAdminLocations();
       }
-      else if (activeTab === "cms") fetchCmsAdminData();
+      else if (activeTab === "content" && contentTab === "banners") fetchCmsAdminData();
       else if (activeTab === "users") fetchAllUsers();
       else if (activeTab === "vip_plans") fetchAdminVipPlans();
       else if (activeTab === "transactions") fetchAdminTransactions();
     }
-  }, [isMounted, isAuthenticated, role, activeTab]);
+  }, [isMounted, isAuthenticated, role, activeTab, contentTab]);
 
   const fetchAllBusinesses = async () => {
     setIsLoadingBusinesses(true);
     try {
-      const token = Cookies.get("access_token");
-      const response = await api.get("/directory/admin/businesses/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/directory/admin/businesses/");
       setAllBusinesses(response.data.results || response.data);
     } catch (error) {
       console.error("خطا در دریافت لیست کسب‌وکارها", error);
@@ -162,27 +157,22 @@ export default function SuperAdminPanel() {
 
   const toggleVerification = async (businessId: string, currentStatus: boolean) => {
     try {
-      const token = Cookies.get("access_token");
       await api.patch(
         `/directory/admin/businesses/${businessId}/verify/`,
-        { is_verified: !currentStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { is_verified: !currentStatus }
       );
       setAllBusinesses((prev) =>
         prev.map((biz) => (biz.id === businessId ? { ...biz, is_verified: !currentStatus } : biz))
       );
     } catch (error) {
-      alert("مشکلی در تغییر وضعیت رخ داد.");
+      toast.error("مشکلی در تغییر وضعیت رخ داد.");
     }
   };
 
   const fetchAdminCategories = async () => {
     setIsLoadingCategories(true);
     try {
-      const token = Cookies.get("access_token");
-      const response = await api.get("/taxonomy/admin/categories/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/taxonomy/admin/categories/");
       setCategories(response.data.results || response.data);
     } catch (error) {
       console.error("خطا در دریافت دسته‌بندی‌ها", error);
@@ -194,10 +184,7 @@ export default function SuperAdminPanel() {
   const fetchAdminLocations = async () => {
     setIsLoadingLocations(true);
     try {
-      const token = Cookies.get("access_token");
-      const response = await api.get("/taxonomy/admin/locations/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/taxonomy/admin/locations/");
       setLocations(response.data.results || response.data);
     } catch (error) {
       console.error("خطا در دریافت مکان‌ها", error);
@@ -209,26 +196,21 @@ export default function SuperAdminPanel() {
 
   const updateCategoryPrice = async (categoryId: string, newPrice: string) => {
     try {
-      const token = Cookies.get("access_token");
       await api.patch(
         `/taxonomy/admin/categories/${categoryId}/`,
-        { price: newPrice },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { price: newPrice }
       );
-      alert("قیمت با موفقیت بروزرسانی شد.");
+      toast.success("قیمت با موفقیت بروزرسانی شد.");
       fetchAdminCategories();
     } catch (error) {
-      alert("مشکلی در تغییر قیمت رخ داد.");
+      toast.error("مشکلی در تغییر قیمت رخ داد.");
     }
   };
 
   const fetchCmsAdminData = async () => {
     setIsLoadingCms(true);
     try {
-      const token = Cookies.get("access_token");
-      const response = await api.get("/cms/admin/banners/", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get("/cms/admin/banners/");
       setBanners(response.data.results || response.data);
     } catch (error) {
       console.error("خطا در دریافت اطلاعات CMS", error);
@@ -241,28 +223,22 @@ export default function SuperAdminPanel() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     try {
-      const token = Cookies.get("access_token");
-      await api.post("/cms/admin/banners/", formData, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
-      });
-      alert("بنر با موفقیت اضافه شد.");
+      await api.post("/cms/admin/banners/", formData);
+      toast.success("بنر با موفقیت اضافه شد.");
       (e.target as HTMLFormElement).reset();
       fetchCmsAdminData();
     } catch (error) {
-      alert("خطا در ثبت بنر.");
+      toast.error("خطا در ثبت بنر.");
     }
   };
 
   const handleDeleteBanner = async (id: string) => {
     if (!confirm("آیا از حذف این بنر مطمئن هستید؟")) return;
     try {
-      const token = Cookies.get("access_token");
-      await api.delete(`/cms/admin/banners/${id}/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/cms/admin/banners/${id}/`);
       fetchCmsAdminData();
     } catch (error) {
-      alert("خطا در حذف بنر");
+      toast.error("خطا در حذف بنر");
     }
   };
 
@@ -270,10 +246,7 @@ export default function SuperAdminPanel() {
   const fetchAllUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      const token = Cookies.get("access_token");
-      const response = await api.get("/identity/admin/users/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/identity/admin/users/");
       setUsers(response.data.results || response.data);
     } catch (error) {
       console.error("خطا در دریافت لیست کاربران", error);
@@ -287,20 +260,18 @@ export default function SuperAdminPanel() {
     if (!confirm(`آیا از ${currentStatus ? 'مسدود کردن' : 'فعال‌سازی'} این کاربر مطمئن هستید؟`)) return;
 
     try {
-      const token = Cookies.get("access_token");
       await api.patch(
         `/identity/admin/users/${userId}/`,
-        { is_active: !currentStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { is_active: !currentStatus }
       );
 
       // آپدیت سریع لیست در فرانت‌اند بدون نیاز به رفرش
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_active: !currentStatus } : u))
       );
-      alert("وضعیت کاربر با موفقیت تغییر کرد.");
+      toast.success("وضعیت کاربر با موفقیت تغییر کرد.");
     } catch (error) {
-      alert("خطا در تغییر وضعیت کاربر.");
+      toast.error("خطا در تغییر وضعیت کاربر.");
     }
   };
 
@@ -309,16 +280,13 @@ export default function SuperAdminPanel() {
     if (!confirm("هشدار: آیا از حذف کامل این کسب‌وکار مطمئن هستید؟ این عملیات غیرقابل بازگشت است!")) return;
 
     try {
-      const token = Cookies.get("access_token");
-      await api.delete(`/directory/admin/businesses/${businessId}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/directory/admin/businesses/${businessId}/`);
 
       // حذف از استیت
       setAllBusinesses((prev) => prev.filter((biz) => biz.id !== businessId));
-      alert("کسب‌وکار با موفقیت حذف شد.");
+      toast.success("کسب‌وکار با موفقیت حذف شد.");
     } catch (error) {
-      alert("خطا در حذف کسب‌وکار.");
+      toast.error("خطا در حذف کسب‌وکار.");
     }
   };
 
@@ -327,10 +295,7 @@ export default function SuperAdminPanel() {
   const fetchAdminVipPlans = async () => {
     setIsLoadingVipPlans(true);
     try {
-      const token = Cookies.get("access_token");
-      const response = await api.get("/directory/admin/subscription-plans/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/directory/admin/subscription-plans/");
       setVipPlans(response.data.results || response.data);
     } catch (error) {
       console.error("خطا در دریافت پلن‌های VIP", error);
@@ -342,10 +307,7 @@ export default function SuperAdminPanel() {
   const fetchAdminTransactions = async () => {
     setIsLoadingTransactions(true);
     try {
-      const token = Cookies.get("access_token");
-      const response = await api.get("/directory/admin/transactions/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/directory/admin/transactions/");
       setTransactions(response.data.results || response.data);
     } catch (error) {
       console.error("خطا در دریافت لیست تراکنش‌ها", error);
@@ -357,30 +319,27 @@ export default function SuperAdminPanel() {
   // تابع تغییر وضعیت پلن VIP
   const toggleVipPlanStatus = async (planId: number, currentStatus: boolean) => {
     try {
-      const token = Cookies.get("access_token");
       await api.patch(
         `/directory/admin/subscription-plans/${planId}/`,
-        { is_active: !currentStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { is_active: !currentStatus }
       );
       setVipPlans((prev) =>
         prev.map((plan) => (plan.id === planId ? { ...plan, is_active: !currentStatus } : plan))
       );
-      alert("وضعیت پلن با موفقیت تغییر کرد.");
+      toast.success("وضعیت پلن با موفقیت تغییر کرد.");
     } catch (error) {
-      alert("خطا در تغییر وضعیت پلن.");
+      toast.error("خطا در تغییر وضعیت پلن.");
     }
   };
 
 
 
-  if (!isMounted || !isAuthenticated || (role !== "admin" && role !== "superadmin" && role !== "ADMIN")) {
+  if (!isMounted || !isAuthenticated || role !== "ADMIN") {
     return <div className="flex items-center justify-center min-h-[60vh] text-gray-500" dir="rtl">در حال بررسی دسترسی...</div>;
   }
 
   const roleTranslator: Record<string, string> = {
     ADMIN: "مدیر کل",
-    superadmin: "مدیر کل",
     BUSINESS_OWNER: "صاحب کسب‌وکار",
     CLIENT: "مشتری عادی",
   };
@@ -388,13 +347,18 @@ export default function SuperAdminPanel() {
   const tabs = [
     { id: "businesses", label: "کسب‌وکارها" },
     { id: "categories", label: "دسته‌بندی‌ها و قیمت‌ها" },
-    { id: "cms", label: "مدیریت محتوا " },
-    { id: "settings", label: "تنظیمات متون سایت" },
-    { id: "page_content", label: "صفحات (درباره ما، قوانین)" }, // این خط اضافه شود
-    { id: "menus", label: "مدیریت منوها" },
+    { id: "content", label: "محتوای سایت" },
     { id: "users", label: "کاربران پلتفرم" },
     { id: "vip_plans", label: "پلن‌های VIP" },
     { id: "transactions", label: "تراکنش‌های پلتفرم" },
+  ];
+
+  const contentTabs = [
+    { id: "banners", label: "بنرها و اسلایدرها" },
+    { id: "menus", label: "منوها" },
+    { id: "texts", label: "متون سایت" },
+    { id: "pages", label: "صفحات (درباره ما، قوانین)" },
+    { id: "landing", label: "صفحه‌ی لندینگ" },
   ];
 
   return (
@@ -407,7 +371,7 @@ export default function SuperAdminPanel() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-5 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeTab === tab.id
-              ? "bg-slate-900 text-white shadow-md"
+              ? "bg-brand-900 text-white shadow-md"
               : "bg-transparent text-gray-600 hover:bg-gray-100"
               }`}
           >
@@ -416,23 +380,47 @@ export default function SuperAdminPanel() {
         ))}
       </div>
 
+      {/* زیرمنوی محتوای سایت */}
+      {activeTab === "content" && (
+        <div className="flex flex-wrap gap-2">
+          {contentTabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setContentTab(t.id)}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all border ${contentTab === t.id
+                ? "bg-brand-600 border-brand-600 text-white"
+                : "bg-white border-gray-200 text-gray-600 hover:border-brand-300"
+                }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* محتوای تب‌ها */}
       <Card className="shadow-sm border-gray-200 min-h-[500px]">
-        {activeTab === "menus" && (
+        {activeTab === "content" && contentTab === "menus" && (
           <CardContent className="p-6">
             <AdminMenus />
           </CardContent>
         )}
 
-        {activeTab === "settings" && (
+        {activeTab === "content" && contentTab === "texts" && (
           <CardContent className="p-6">
             <AdminSettings />
           </CardContent>
         )}
 
-        {activeTab === "page_content" && (
+        {activeTab === "content" && contentTab === "pages" && (
           <CardContent className="p-6">
-            <AdminContentSettings />
+            <AdminPagesContent />
+          </CardContent>
+        )}
+
+        {activeTab === "content" && contentTab === "landing" && (
+          <CardContent className="p-6">
+            <AdminLandingEditor />
           </CardContent>
         )}
 
@@ -441,7 +429,7 @@ export default function SuperAdminPanel() {
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gray-50/50 border-b pb-4">
               <div className="flex items-center gap-3">
                 <CardTitle className="text-lg">بررسی اصالت کسب‌وکارها</CardTitle>
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">
+                <span className="bg-brand-100 text-brand-800 px-3 py-1 rounded-full text-sm font-bold">
                   {allBusinesses.length} مورد
                 </span>
               </div>
@@ -493,7 +481,7 @@ export default function SuperAdminPanel() {
                             <Button
                               size="sm"
                               variant={biz.is_verified ? "secondary" : "default"}
-                              className={!biz.is_verified ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                              className={!biz.is_verified ? "bg-brand-600 hover:bg-brand-700" : ""}
                               onClick={() => toggleVerification(biz.id, biz.is_verified)}
                             >
                               {biz.is_verified ? "لغو تایید" : "تایید کردن"}
@@ -526,7 +514,7 @@ export default function SuperAdminPanel() {
             {/* بخش اول: مدیریت دسته‌بندی‌ها */}
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="font-black text-lg text-slate-800">مدیریت دسته‌بندی‌ها و قیمت‌گذاری</h3>
+                <h3 className="font-black text-lg text-brand-800">مدیریت دسته‌بندی‌ها و قیمت‌گذاری</h3>
               </div>
 
               {/* فرم افزودن دسته‌بندی جدید */}
@@ -534,14 +522,13 @@ export default function SuperAdminPanel() {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 try {
-                  const token = Cookies.get("access_token");
                   await api.post("/taxonomy/admin/categories/", {
                     name: formData.get("name"),
                     slug: formData.get("slug"),
                     price: formData.get("price") || 0,
                     icon: formData.get("icon") // دریافت و ارسال آیکون به بک‌اند
-                  }, { headers: { Authorization: `Bearer ${token}` } });
-                  alert("دسته‌بندی با موفقیت اضافه شد.");
+                  });
+                  toast.success("دسته‌بندی با موفقیت اضافه شد.");
                   (e.target as HTMLFormElement).reset();
 
                   // --- این دو خط اینجا اضافه می‌شوند تا فرم خالی شود ---
@@ -551,7 +538,7 @@ export default function SuperAdminPanel() {
 
                   fetchAdminCategories();
                 } catch (error) {
-                  alert("خطا در ثبت دسته‌بندی. ممکن است اسلاگ تکراری باشد.");
+                  toast.error("خطا در ثبت دسته‌بندی. ممکن است اسلاگ تکراری باشد.");
                 }
               }} className="flex flex-col md:flex-row gap-4 items-end bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                 <div className="flex-1 w-full space-y-1.5">
@@ -587,7 +574,7 @@ export default function SuperAdminPanel() {
                   <label className="text-xs font-bold text-gray-600">هزینه ثبت (تومان)</label>
                   <Input type="number" name="price" defaultValue="0" className="bg-white" />
                 </div>
-                <Button type="submit" className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700">افزودن دسته</Button>
+                <Button type="submit" className="w-full md:w-auto bg-brand-600 hover:bg-brand-700">افزودن دسته</Button>
               </form>
 
               {/* جدول دسته‌بندی‌ها */}
@@ -612,7 +599,7 @@ export default function SuperAdminPanel() {
                         <tr key={cat.id} className="hover:bg-gray-50/50 transition">
                           <td className="p-4 font-bold text-gray-800">{cat.name}</td>
                           <td className="p-4 text-gray-500 font-mono text-xs">{cat.slug}</td>
-                          <td className="p-4 text-blue-600 font-bold">{Number(cat.price || 0).toLocaleString()} تومان</td>
+                          <td className="p-4 text-brand-600 font-bold">{Number(cat.price || 0).toLocaleString()} تومان</td>
                           <td className="p-4">
                             <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.currentTarget); updateCategoryPrice(cat.id, formData.get("price") as string); }} className="flex gap-2">
                               <Input type="number" name="price" defaultValue={cat.price || 0} className="w-28 h-9" />
@@ -622,8 +609,7 @@ export default function SuperAdminPanel() {
                           <td className="p-4 text-center">
                             <Button variant="destructive" size="sm" onClick={async () => {
                               if (confirm("آیا از حذف این دسته‌بندی مطمئن هستید؟")) {
-                                const token = Cookies.get("access_token");
-                                await api.delete(`/taxonomy/admin/categories/${cat.id}/`, { headers: { Authorization: `Bearer ${token}` } });
+                                await api.delete(`/taxonomy/admin/categories/${cat.id}/`);
                                 fetchAdminCategories();
                               }
                             }}>حذف</Button>
@@ -639,7 +625,7 @@ export default function SuperAdminPanel() {
             {/* بخش دوم: مدیریت شهرها و مکان‌ها */}
             <div className="space-y-4 pt-6 border-t border-gray-100">
               <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="font-black text-lg text-slate-800">مدیریت شهرها و مناطق تحت پوشش</h3>
+                <h3 className="font-black text-lg text-brand-800">مدیریت شهرها و مناطق تحت پوشش</h3>
               </div>
 
               {/* فرم افزودن شهر جدید */}
@@ -647,16 +633,15 @@ export default function SuperAdminPanel() {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 try {
-                  const token = Cookies.get("access_token");
                   await api.post("/taxonomy/admin/locations/", {
                     name: formData.get("name"),
                     slug: formData.get("slug")
-                  }, { headers: { Authorization: `Bearer ${token}` } });
-                  alert("شهر با موفقیت اضافه شد.");
+                  });
+                  toast.success("شهر با موفقیت اضافه شد.");
                   (e.target as HTMLFormElement).reset();
                   fetchAdminLocations();
                 } catch (error) {
-                  alert("خطا در ثبت شهر. ممکن است اسلاگ تکراری باشد.");
+                  toast.error("خطا در ثبت شهر. ممکن است اسلاگ تکراری باشد.");
                 }
               }} className="flex flex-col md:flex-row gap-4 items-end bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                 <div className="flex-1 w-full space-y-1.5">
@@ -667,7 +652,7 @@ export default function SuperAdminPanel() {
                   <label className="text-xs font-bold text-gray-600">اسلاگ (انگلیسی)</label>
                   <Input type="text" name="slug" required placeholder="isfahan" dir="ltr" className="bg-white" />
                 </div>
-                <Button type="submit" className="w-full md:w-auto bg-blue-600 hover:bg-blue-700">افزودن شهر</Button>
+                <Button type="submit" className="w-full md:w-auto bg-brand-600 hover:bg-brand-700">افزودن شهر</Button>
               </form>
 
               {/* جدول شهرها */}
@@ -695,8 +680,7 @@ export default function SuperAdminPanel() {
                           <td className="p-4 text-center">
                             <Button variant="destructive" size="sm" onClick={async () => {
                               if (confirm("آیا از حذف این شهر مطمئن هستید؟ کسب‌وکارهای وابسته ممکن است دچار مشکل شوند.")) {
-                                const token = Cookies.get("access_token");
-                                await api.delete(`/taxonomy/admin/locations/${loc.id}/`, { headers: { Authorization: `Bearer ${token}` } });
+                                await api.delete(`/taxonomy/admin/locations/${loc.id}/`);
                                 fetchAdminLocations();
                               }
                             }}>حذف شهر</Button>
@@ -711,12 +695,12 @@ export default function SuperAdminPanel() {
           </CardContent>
         )}
 
-        {activeTab === "cms" && (
+        {activeTab === "content" && contentTab === "banners" && (
           <CardContent className="p-6 space-y-8">
             {isLoadingCms && <p className="text-center text-gray-500 text-sm">در حال بارگذاری...</p>}
 
             <div className="space-y-4">
-              <h3 className="font-bold text-lg text-slate-800 border-b pb-2">بنرهای تبلیغاتی و اسلایدرها</h3>
+              <h3 className="font-bold text-lg text-brand-800 border-b pb-2">بنرهای تبلیغاتی و اسلایدرها</h3>
               <form onSubmit={handleAddBanner} className="flex flex-col md:flex-row gap-4 items-end bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                 <div className="flex-1 w-full space-y-1.5">
                   <label className="text-xs font-bold text-gray-600">عنوان بنر</label>
@@ -734,13 +718,13 @@ export default function SuperAdminPanel() {
                   <label className="text-xs font-bold text-gray-600">فایل تصویر</label>
                   <Input type="file" name="image" required accept="image/*" className="bg-white cursor-pointer" />
                 </div>
-                <Button type="submit" className="w-full md:w-auto bg-blue-600 hover:bg-blue-700">آپلود بنر</Button>
+                <Button type="submit" className="w-full md:w-auto bg-brand-600 hover:bg-brand-700">آپلود بنر</Button>
               </form>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {banners.map((banner) => (
                   <Card key={banner.id} className="overflow-hidden">
-                    <img src={`http://127.0.0.1:8000${banner.image}`} alt={banner.title} className="w-full h-32 object-cover" />
+                    <img src={mediaUrl(banner.image)} alt={banner.title} className="w-full h-32 object-cover" />
                     <CardContent className="p-3">
                       <p className="font-bold text-sm truncate">{banner.title}</p>
                       <p className="text-xs text-gray-500 mt-1 mb-3">جایگاه: {banner.position}</p>
@@ -757,7 +741,7 @@ export default function SuperAdminPanel() {
           <>
             <CardHeader className="flex flex-row items-center justify-between bg-gray-50/50 border-b pb-4">
               <CardTitle className="text-lg">مدیریت کاربران پلتفرم</CardTitle>
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">{users.length} کاربر</span>
+              <span className="bg-brand-100 text-brand-800 px-3 py-1 rounded-full text-sm font-bold">{users.length} کاربر</span>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -785,17 +769,17 @@ export default function SuperAdminPanel() {
                             {u.created_at ? new Date(u.created_at).toLocaleDateString("fa-IR") : "نامشخص"}
                           </td>
                           <td className="p-4 text-center">
-                            <span className={`inline-block px-2 py-1 rounded-md text-xs font-bold ${u.is_active !== false ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                            <span className={`inline-block px-2 py-1 rounded-md text-xs font-bold ${u.is_active !== false ? "bg-brand-100 text-brand-700" : "bg-red-100 text-red-700"}`}>
                               {u.is_active !== false ? "فعال" : "مسدود"}
                             </span>
                           </td>
                           <td className="p-4 text-center">
                             {/* جلوگیری از مسدود کردن مدیر کل توسط خودش */}
-                            {u.role !== 'ADMIN' && u.role !== 'superadmin' ? (
+                            {u.role !== 'ADMIN' ? (
                               <Button
                                 size="sm"
                                 variant={u.is_active !== false ? "destructive" : "default"}
-                                className={u.is_active === false ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                                className={u.is_active === false ? "bg-brand-600 hover:bg-brand-700" : ""}
                                 onClick={() => toggleUserStatus(u.id, u.is_active !== false)}
                               >
                                 {u.is_active !== false ? "مسدود کردن" : "رفع مسدودی"}
@@ -820,7 +804,7 @@ export default function SuperAdminPanel() {
           <CardContent className="p-6 space-y-8">
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="font-black text-lg text-slate-800">مدیریت اشتراک‌های VIP</h3>
+                <h3 className="font-black text-lg text-brand-800">مدیریت اشتراک‌های VIP</h3>
               </div>
 
               {/* فرم افزودن پلن جدید */}
@@ -828,18 +812,17 @@ export default function SuperAdminPanel() {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 try {
-                  const token = Cookies.get("access_token");
                   await api.post("/directory/admin/subscription-plans/", {
                     name: formData.get("name"),
                     base_discount_percentage: formData.get("base_discount_percentage"),
                     price_per_month: formData.get("price_per_month"),
                     is_active: true
-                  }, { headers: { Authorization: `Bearer ${token}` } });
-                  alert("پلن VIP با موفقیت اضافه شد.");
+                  });
+                  toast.success("پلن VIP با موفقیت اضافه شد.");
                   (e.target as HTMLFormElement).reset();
                   fetchAdminVipPlans();
                 } catch (error) {
-                  alert("خطا در ثبت پلن VIP.");
+                  toast.error("خطا در ثبت پلن VIP.");
                 }
               }} className="flex flex-col md:flex-row gap-4 items-end bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                 <div className="flex-1 w-full space-y-1.5">
@@ -854,7 +837,7 @@ export default function SuperAdminPanel() {
                   <label className="text-xs font-bold text-gray-600">قیمت ماهانه (تومان)</label>
                   <Input type="number" name="price_per_month" required className="bg-white" />
                 </div>
-                <Button type="submit" className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold">افزودن پلن</Button>
+                <Button type="submit" className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-brand-900 font-bold">افزودن پلن</Button>
               </form>
 
               {/* جدول پلن‌ها */}
@@ -878,8 +861,8 @@ export default function SuperAdminPanel() {
                       vipPlans.map((plan) => (
                         <tr key={plan.id} className="hover:bg-gray-50/50 transition">
                           <td className="p-4 font-bold text-gray-800">{plan.name}</td>
-                          <td className="p-4 font-bold text-emerald-600">{plan.base_discount_percentage}٪</td>
-                          <td className="p-4 text-blue-600 font-bold">{Number(plan.price_per_month).toLocaleString()} تومان</td>
+                          <td className="p-4 font-bold text-brand-600">{plan.base_discount_percentage}٪</td>
+                          <td className="p-4 text-brand-600 font-bold">{Number(plan.price_per_month).toLocaleString()} تومان</td>
                           <td className="p-4 text-center">
                             <span className={`inline-block px-2 py-1 rounded-md text-xs font-bold ${plan.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                               {plan.is_active ? "فعال" : "غیرفعال"}
@@ -905,7 +888,7 @@ export default function SuperAdminPanel() {
           <>
             <CardHeader className="flex flex-row items-center justify-between bg-gray-50/50 border-b pb-4">
               <CardTitle className="text-lg">تاریخچه کل تراکنش‌های پلتفرم</CardTitle>
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">{transactions.length} تراکنش</span>
+              <span className="bg-brand-100 text-brand-800 px-3 py-1 rounded-full text-sm font-bold">{transactions.length} تراکنش</span>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -932,11 +915,11 @@ export default function SuperAdminPanel() {
                           <td className="p-4 font-bold text-gray-800">{trx.business_name || "نامشخص"}</td>
                           <td className="p-4 text-gray-600">{trx.customer_phone || "نامشخص"}</td>
                           <td className="p-4 text-gray-500">{Number(trx.original_amount).toLocaleString()}</td>
-                          <td className="p-4 font-bold text-emerald-600">{trx.applied_discount_percentage}٪</td>
+                          <td className="p-4 font-bold text-brand-600">{trx.applied_discount_percentage}٪</td>
                           <td className="p-4 text-xs font-bold text-slate-500">
                             {trx.discount_source === 'SUBSCRIPTION' ? 'اشتراک VIP' : trx.discount_source === 'CAMPAIGN' ? 'کمپین' : 'بدون تخفیف'}
                           </td>
-                          <td className="p-4 text-blue-600 font-black">{Number(trx.final_amount).toLocaleString()} تومان</td>
+                          <td className="p-4 text-brand-600 font-black">{Number(trx.final_amount).toLocaleString()} تومان</td>
                           <td className="p-4 text-gray-500 text-xs">
                             {new Date(trx.created_at).toLocaleDateString("fa-IR")}
                           </td>

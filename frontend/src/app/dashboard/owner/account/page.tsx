@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
-import Cookies from "js-cookie";
 import Link from "next/link";
 import { User, Phone, Save, Loader2, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toaster";
 
 export default function OwnerAccountPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -24,11 +24,8 @@ export default function OwnerAccountPage() {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = Cookies.get("access_token");
                 // درخواست به آدرس جدیدی که در بک‌اند ساختیم
-                const res = await api.get("/identity/profile/", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await api.get("/identity/profile/");
 
                 setFormData({
                     full_name: res.data.full_name || "",
@@ -54,15 +51,12 @@ export default function OwnerAccountPage() {
         setSuccessMessage("");
 
         try {
-            const token = Cookies.get("access_token");
             // ارسال درخواست پچ به همان آدرس برای آپدیت نام
-            await api.patch("/identity/profile/", { full_name: formData.full_name }, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await api.patch("/identity/profile/", { full_name: formData.full_name });
             setSuccessMessage("اطلاعات حساب کاربری با موفقیت بروزرسانی شد.");
         } catch (error) {
             console.error(error);
-            alert("خطایی در بروزرسانی اطلاعات رخ داد.");
+            toast.error("خطایی در بروزرسانی اطلاعات رخ داد.");
         } finally {
             setIsLoading(false);
         }
@@ -85,14 +79,14 @@ export default function OwnerAccountPage() {
                         <h1 className="text-2xl font-black text-gray-900">حساب کاربری من</h1>
                         <p className="text-sm text-gray-500 mt-2">اطلاعات شخصی خود را در سیستم مدیریت کنید.</p>
                     </div>
-                    <Link href="/dashboard/owner" className="text-blue-600 hover:underline text-sm font-bold">
+                    <Link href="/dashboard/owner" className="text-brand-600 hover:underline text-sm font-bold">
                         بازگشت به داشبورد
                     </Link>
                 </header>
 
                 {successMessage && (
-                    <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 text-sm font-bold">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <div className="mb-6 p-4 bg-brand-50 border border-brand-200 text-brand-800 rounded-xl flex items-center gap-3 text-sm font-bold">
+                        <CheckCircle2 className="w-5 h-5 text-brand-600" />
                         {successMessage}
                     </div>
                 )}
@@ -101,7 +95,7 @@ export default function OwnerAccountPage() {
 
                     <div>
                         <label className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                            <User className="w-4 h-4 text-blue-600" /> نام و نام خانوادگی
+                            <User className="w-4 h-4 text-brand-600" /> نام و نام خانوادگی
                         </label>
                         <Input name="full_name" value={formData.full_name} onChange={handleChange} className="h-12 bg-gray-50/50 rounded-xl" />
                     </div>
@@ -116,14 +110,14 @@ export default function OwnerAccountPage() {
 
                         <div>
                             <label className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4 text-emerald-600" /> کد ملی احراز شده (شاهکار)
+                                <ShieldCheck className="w-4 h-4 text-brand-600" /> کد ملی احراز شده (شاهکار)
                             </label>
-                            <Input name="national_id" value={formData.national_id} disabled dir="ltr" className="h-12 text-left bg-emerald-50/50 text-emerald-800 rounded-xl cursor-not-allowed border-emerald-100" />
+                            <Input name="national_id" value={formData.national_id} disabled dir="ltr" className="h-12 text-left bg-brand-50/50 text-brand-800 rounded-xl cursor-not-allowed border-brand-100" />
                         </div>
                     </div>
 
                     <div className="pt-6">
-                        <Button type="submit" disabled={isLoading} className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg">
+                        <Button type="submit" disabled={isLoading} className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-base shadow-lg">
                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "ذخیره تغییرات حساب"}
                         </Button>
                     </div>

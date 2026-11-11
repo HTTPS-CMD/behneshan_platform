@@ -64,7 +64,7 @@ export default function BrandAssetsManager({
           {...getRootProps()}
           className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer transition-colors ${
             isDragActive
-              ? "border-blue-500 bg-blue-50"
+              ? "border-brand-500 bg-brand-50"
               : "border-gray-300 hover:bg-gray-50"
           }`}
         >

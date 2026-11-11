@@ -1,50 +1,51 @@
 import { create } from "zustand";
 import Cookies from "js-cookie";
 
+/**
+ * وضعیت ورود کاربر (H6):
+ * - access توکن فقط در حافظه است (نه کوکی و نه localStorage).
+ * - refresh در کوکی httpOnly است و فقط سرور Next به آن دسترسی دارد (/api/auth/*).
+ * - کوکی user_role فقط برای نمایش رابط کاربری است؛ دسترسی واقعی را بک‌اند و proxy با امضای توکن بررسی می‌کنند.
+ */
 interface AuthState {
   isAuthenticated: boolean;
   accessToken: string | null;
-  role: string | null; // <--- فیلد نقش اضافه شد
+  role: string | null;
 
-  // متد لاگین حالا نقش را هم می‌گیرد
-  login: (access: string, refresh: string, role: string) => void;
-
-  // متد جدید برای زمان ارتقای کاربر (مثلاً بعد از ثبت کسب‌وکار)
-  updateTokensAndRole: (access: string, refresh: string, role: string) => void;
-
+  /** بعد از تأیید OTP (کوکی‌ها را سرور ست کرده است) */
+  login: (access: string, role: string) => void;
+  /** بعد از تمدید نشست */
+  setSession: (access: string, role: string) => void;
+  /** پاک کردن وضعیت محلی بدون تماس با سرور (نشست منقضی شده) */
+  clearSession: () => void;
+  /** خروج کامل: باطل کردن refresh در سرور و پاک کردن کوکی‌ها */
   logout: () => void;
 }
 
+const readRole = () => (typeof document !== "undefined" ? Cookies.get("user_role") || null : null);
+
+// پاک‌سازی توکن‌های قدیمی که قبلاً در کوکی قابل‌خواندن ذخیره می‌شدند
+if (typeof document !== "undefined") Cookies.remove("access_token");
+
 export const useAuthStore = create<AuthState>((set) => ({
-  // هنگام لود سایت، چک می‌کنیم آیا توکنی از قبل در مرورگر هست یا نه
-  isAuthenticated: !!Cookies.get("access_token"),
-  accessToken: Cookies.get("access_token") || null,
-  role: Cookies.get("user_role") || null, // <--- خواندن نقش از کوکی
+  isAuthenticated: !!readRole(),
+  accessToken: null,
+  role: readRole(),
 
-  login: (access, refresh, role) => {
-    // اعتبار توکن اصلی در بک‌اند ۶۰ دقیقه و رفرش ۷ روز است؛ رفرش خودکار در api.ts انجام می‌شود
-    const opts = { expires: 7, sameSite: "lax" as const, secure: window.location.protocol === "https:" };
-    Cookies.set("access_token", access, opts);
-    Cookies.set("refresh_token", refresh, opts);
-    Cookies.set("user_role", role, opts);
+  login: (access, role) => set({ isAuthenticated: true, accessToken: access, role }),
 
-    set({ isAuthenticated: true, accessToken: access, role });
-  },
+  setSession: (access, role) => set({ isAuthenticated: true, accessToken: access, role }),
 
-  updateTokensAndRole: (access, refresh, role) => {
-    // جایگزین کردن توکن‌ها و نقش جدید در کوکی‌ها
-    const opts = { expires: 7, sameSite: "lax" as const, secure: window.location.protocol === "https:" };
-    Cookies.set("access_token", access, opts);
-    Cookies.set("refresh_token", refresh, opts);
-    Cookies.set("user_role", role, opts);
-
-    set({ accessToken: access, role });
+  clearSession: () => {
+    Cookies.remove("user_role");
+    set({ isAuthenticated: false, accessToken: null, role: null });
   },
 
   logout: () => {
-    Cookies.remove("access_token");
-    Cookies.remove("refresh_token");
-    Cookies.remove("user_role"); // <--- پاک کردن نقش
+    if (typeof window !== "undefined") {
+      fetch("/api/auth/logout", { method: "POST", credentials: "same-origin", keepalive: true }).catch(() => {});
+    }
+    Cookies.remove("user_role");
     set({ isAuthenticated: false, accessToken: null, role: null });
   },
 }));

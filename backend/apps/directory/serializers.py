@@ -1,6 +1,22 @@
 import os
+
+from apps.taxonomy.serializers import CategorySerializer, LocationSerializer
 from rest_framework import serializers
-from .models import Business, Review, SiteContent
+
+from .models import (
+    Business,
+    BusinessRequest,
+    CampaignUsage,
+    DiscountCampaign,
+    Product,
+    Review,
+    SiteContent,
+    Story,
+    SubscriptionPlan,
+    TransactionLog,
+    UserBusinessVisit,
+)
+from .utils import get_owner_business
 
 # --- اعتبارسنجی فایل‌های آپلودی ---
 IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.webp'}
@@ -23,8 +39,8 @@ def validate_upload(f, allowed_exts, max_mb):
             img = Image.open(f)
             img.verify()
             f.seek(0)
-        except Exception:
-            raise serializers.ValidationError("فایل تصویر معتبر نیست.")
+        except Exception as exc:
+            raise serializers.ValidationError("فایل تصویر معتبر نیست.") from exc
     return f
 
 
@@ -34,21 +50,25 @@ class ImageFieldsValidationMixin:
 
     def validate_banner(self, value):
         return validate_upload(value, IMAGE_EXTS, MAX_IMAGE_MB)
-from apps.taxonomy.models import Category, Location
-from .models import DiscountCampaign, CampaignUsage, TransactionLog, SubscriptionPlan, CustomerProfile, SubscriptionPlan
-# from apps.taxonomy.serializers import CategorySerializer, LocationSerializer
 
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ['id', 'name', 'slug', 'icon_url']
 
-class LocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Location
-        fields = ['id', 'name', 'slug']
+class ActiveCampaignMixin:
+    """بهترین کمپین عمومی و فعال کسب‌وکار (قبلاً در دو serializer کپی شده بود)"""
 
-class BusinessListSerializer(serializers.ModelSerializer):
+    def get_active_campaign(self, obj):
+        # فقط کمپین‌هایی که ظرفیت بالا (عمومی) دارند و فعال هستند
+        campaign = obj.campaigns.filter(is_active=True, max_usage__gte=10000).order_by('-discount_percent').first()
+        if campaign:
+            return {
+                "id": campaign.id,
+                "title": f"{campaign.discount_percent}٪ تخفیف",
+                "discount_percent": campaign.discount_percent,
+                "code": campaign.code,
+            }
+        return None
+
+
+class BusinessListSerializer(ActiveCampaignMixin, serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     location = LocationSerializer(read_only=True)
     followers_count = serializers.IntegerField(source='followers.count', read_only=True)
@@ -62,18 +82,6 @@ class BusinessListSerializer(serializers.ModelSerializer):
             'active_campaign', 'establishment_year', 'followers_count' # ۲. اضافه کردن به خروجی
         ]
 
-    # ۳. متد برای پیدا کردن بهترین کمپین فعال این کسب‌وکار
-    def get_active_campaign(self, obj):
-        # فیلتر جدید: فقط کمپین‌هایی که ظرفیت بالا (عمومی) دارند و فعال هستند را بگیر
-        campaign = obj.campaigns.filter(is_active=True, max_usage__gte=10000).order_by('-discount_percent').first()
-        if campaign:
-            return {
-                "id": campaign.id,
-                "title": f"{campaign.discount_percent}٪ تخفیف",
-                "discount_percent": campaign.discount_percent,
-                "code": campaign.code
-            }
-        return None
 
 
 # این کلاس را به انتهای فایل اضافه کن
@@ -84,7 +92,7 @@ class BusinessCreateSerializer(ImageFieldsValidationMixin, serializers.ModelSeri
         
 
 # در فایل serializers.py این کلاس را اضافه کن:
-class BusinessSerializer(serializers.ModelSerializer):
+class BusinessSerializer(ActiveCampaignMixin, serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     location = LocationSerializer(read_only=True)
     active_campaign = serializers.SerializerMethodField() # اضافه شدن فیلد
@@ -93,18 +101,44 @@ class BusinessSerializer(serializers.ModelSerializer):
         model = Business
         fields = '__all__'
         
-    def get_active_campaign(self, obj):
-        # فیلتر جدید: فقط کمپین‌هایی که ظرفیت بالا (عمومی) دارند و فعال هستند را بگیر
-        campaign = obj.campaigns.filter(is_active=True, max_usage__gte=10000).order_by('-discount_percent').first()
-        if campaign:
-            return {
-                "id": campaign.id,
-                "title": f"{campaign.discount_percent}٪ تخفیف",
-                "discount_percent": campaign.discount_percent,
-                "code": campaign.code
-            }
-        return None
     
+
+class BusinessPublicSerializer(ActiveCampaignMixin, serializers.ModelSerializer):
+    """نسخه‌ی عمومی جزئیات کسب‌وکار: فقط فیلدهای قابل نمایش برای همه.
+    owner، followers و آمار داخلی عمداً حذف شده‌اند (H3)."""
+    category = CategorySerializer(read_only=True)
+    location = LocationSerializer(read_only=True)
+    active_campaign = serializers.SerializerMethodField()
+    followers_count = serializers.IntegerField(source='followers.count', read_only=True)
+    merchant_level = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Business
+        fields = [
+            'id', 'name', 'slug', 'description', 'category', 'location',
+            'logo', 'banner', 'address', 'public_phone', 'instagram_id',
+            'latitude', 'longitude', 'website', 'establishment_year',
+            'is_verified', 'is_premium', 'average_rating', 'review_count',
+            'followers_count', 'active_campaign', 'created_at', 'merchant_level',
+        ]
+
+    def get_merchant_level(self, obj):
+        """سطح باشگاه پذیرندگان؛ طلایی و الماس نشان «دکان برتر» می‌گیرند"""
+        st = getattr(obj, 'merchant_status', None)  # نبودن ردیف = None (RelatedObjectDoesNotExist یک AttributeError است)
+        if not st:
+            return None
+        return {"level": st.level, "label": st.get_level_display(), "is_top": st.is_top}
+
+
+def mask_phone(phone):
+    """09121234567 -> 0912***4567"""
+    if not phone:
+        return ""
+    phone = str(phone)
+    if len(phone) < 8:
+        return "***"
+    return f"{phone[:4]}***{phone[-4:]}"
+
 
 class BusinessUpdateSerializer(ImageFieldsValidationMixin, serializers.ModelSerializer):
     class Meta:
@@ -121,7 +155,11 @@ class BusinessUpdateSerializer(ImageFieldsValidationMixin, serializers.ModelSeri
 
 class ReviewSerializer(serializers.ModelSerializer):
     # این فیلد را قبلاً تعریف کرده‌اید
-    user_phone = serializers.CharField(source='user.phone_number', read_only=True)
+    # شماره‌ی کامل کاربر عمومی نمی‌شود؛ فقط نسخه‌ی ماسک‌شده (H3)
+    user_phone = serializers.SerializerMethodField()
+
+    def get_user_phone(self, obj):
+        return mask_phone(getattr(obj.user, 'phone_number', None))
 
     class Meta:
         model = Review
@@ -174,7 +212,6 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
         
         
 
-from .models import UserBusinessVisit
 
 class UserBusinessVisitSerializer(serializers.ModelSerializer):
     business_name = serializers.CharField(source='business.name', read_only=True)
@@ -222,8 +259,6 @@ class SiteContentSerializer(serializers.ModelSerializer):
         fields = ['page_type', 'title', 'content', 'updated_at']
         
         
-from rest_framework import serializers
-from .models import Story
 
 class StorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -237,8 +272,7 @@ class StorySerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get('request')
         
-        # اصلاح شد: گرفتن اولین کسب‌وکار از لیست کسب‌وکارهای کاربر
-        business = request.user.businesses.first()
+        business = get_owner_business(request.user)
         
         # یک بررسی امنیتی کوچک برای کاربری که هیچ کسب‌وکاری ندارد
         if not business:
@@ -264,7 +298,6 @@ class PublicStorySerializer(serializers.ModelSerializer):
         return None
     
     
-from .models import Product, BusinessRequest
 
 class ProductSerializer(serializers.ModelSerializer):
     final_price = serializers.SerializerMethodField()

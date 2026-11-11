@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toaster";
 
 // تعریف تایپ‌ها
 interface Campaign {
@@ -60,7 +61,7 @@ export default function OwnerCampaignsPage() {
             const res = await api.get("/directory/owner/campaigns/");
             setCampaigns(res.data);
         } catch (error) {
-            alert("خطا در دریافت لیست کدهای تخفیف");
+            toast.error("خطا در دریافت لیست کدهای تخفیف");
         } finally {
             setIsLoading(false);
         }
@@ -85,7 +86,7 @@ export default function OwnerCampaignsPage() {
             setPublicDiscount("");
             fetchCampaigns(); // آپدیت لیست
         } catch (error: any) {
-            alert("خطا در ایجاد کمپین عمومی.");
+            toast.error("خطا در ایجاد کمپین عمومی.");
         } finally {
             setIsCreating(false);
         }
@@ -100,7 +101,7 @@ export default function OwnerCampaignsPage() {
             });
             fetchCampaigns();
         } catch (error) {
-            alert("خطا در تغییر وضعیت");
+            toast.error("خطا در تغییر وضعیت");
         } finally {
             setIsToggling(null);
         }
@@ -113,7 +114,7 @@ export default function OwnerCampaignsPage() {
             await api.delete(`/directory/owner/campaigns/${id}/`);
             fetchCampaigns();
         } catch (error) {
-            alert("خطا در حذف کمپین");
+            toast.error("خطا در حذف کمپین");
         }
     };
 
@@ -131,7 +132,7 @@ export default function OwnerCampaignsPage() {
             setNewCampaign({ code: "", discount_percent: "", max_usage: "" });
             fetchCampaigns(); // آپدیت لیست
         } catch (error: any) {
-            alert(error.response?.data?.code?.[0] || "خطا در ساخت کد. ممکن است این کد تکراری باشد.");
+            toast.error(error.response?.data?.code?.[0] || "خطا در ساخت کد. ممکن است این کد تکراری باشد.");
         } finally {
             setIsCreating(false);
         }
@@ -145,7 +146,7 @@ export default function OwnerCampaignsPage() {
             const res = await api.get(`/directory/owner/campaigns/${campaign.id}/usages/`);
             setUsages(res.data);
         } catch (error) {
-            alert("خطا در دریافت لیست مشتریان");
+            toast.error("خطا در دریافت لیست مشتریان");
         } finally {
             setIsUsagesLoading(false);
         }
@@ -162,7 +163,7 @@ export default function OwnerCampaignsPage() {
                 prev.map((u) => u.id === usageId ? { ...u, is_redeemed: true } : u)
             );
         } catch (error: any) {
-            alert(error.response?.data?.error || "خطا در اعمال تخفیف");
+            toast.error(error.response?.data?.error || "خطا در اعمال تخفیف");
         }
     };
 
@@ -174,7 +175,7 @@ export default function OwnerCampaignsPage() {
                 <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                            <Ticket className="w-7 h-7 text-emerald-600" />
+                            <Ticket className="w-7 h-7 text-brand-600" />
                             مدیریت کمپین‌ها و کدهای معرف
                         </h1>
                         <p className="text-sm text-gray-500 mt-2 font-medium leading-relaxed">
@@ -184,7 +185,7 @@ export default function OwnerCampaignsPage() {
 
                     {/* دکمه ساخت فقط در تب اختصاصی نمایش داده شود */}
                     {activeTab === 'private' && (
-                        <Button onClick={() => setIsCreateModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 font-bold h-12 px-6 rounded-xl shadow-md w-full md:w-auto">
+                        <Button onClick={() => setIsCreateModalOpen(true)} className="bg-brand-600 hover:bg-brand-700 font-bold h-12 px-6 rounded-xl shadow-md w-full md:w-auto">
                             <Plus className="w-5 h-5 ml-2" />
                             ساخت کد جدید
                         </Button>
@@ -195,14 +196,14 @@ export default function OwnerCampaignsPage() {
                 <div className="flex overflow-x-auto bg-gray-200/50 p-1.5 rounded-2xl mb-8 w-full md:w-max">
                     <button
                         onClick={() => setActiveTab('public')}
-                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'public' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'public' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         <Megaphone className="w-4 h-4" />
                         کمپین عمومی (ویترین سایت)
                     </button>
                     <button
                         onClick={() => setActiveTab('private')}
-                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'private' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'private' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         <Lock className="w-4 h-4" />
                         کدهای اختصاصی (مراجعین حضوری)
@@ -211,7 +212,7 @@ export default function OwnerCampaignsPage() {
 
                 {/* وضعیت بارگذاری کلی */}
                 {isLoading ? (
-                    <div className="flex justify-center p-10"><Loader2 className="w-10 h-10 animate-spin text-emerald-600" /></div>
+                    <div className="flex justify-center p-10"><Loader2 className="w-10 h-10 animate-spin text-brand-600" /></div>
                 ) : (
                     <>
                         {/* محتوای تب کمپین عمومی */}
@@ -226,23 +227,23 @@ export default function OwnerCampaignsPage() {
                                 {publicCampaigns.length > 0 ? (
                                     <div className="space-y-4">
                                         {publicCampaigns.map((camp) => (
-                                            <div key={camp.id} className={`border p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all ${camp.is_active ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100' : 'bg-gray-50 border-gray-200 opacity-75'}`}>
+                                            <div key={camp.id} className={`border p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all ${camp.is_active ? 'bg-gradient-to-br from-brand-50 to-saffron-50 border-brand-100' : 'bg-gray-50 border-gray-200 opacity-75'}`}>
                                                 <div>
-                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-3 ${camp.is_active ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-600'}`}>
+                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-3 ${camp.is_active ? 'bg-brand-200 text-brand-800' : 'bg-gray-200 text-gray-600'}`}>
                                                         {camp.is_active ? <CheckCircle className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
                                                         {camp.is_active ? 'فعال و در حال نمایش در سایت' : 'غیرفعال (مخفی)'}
                                                     </span>
-                                                    <h3 className={`text-2xl font-black mb-1 ${camp.is_active ? 'text-emerald-900' : 'text-gray-700'}`}>
+                                                    <h3 className={`text-2xl font-black mb-1 ${camp.is_active ? 'text-brand-900' : 'text-gray-700'}`}>
                                                         {camp.discount_percent}٪ تخفیف پیشنهاد ویژه
                                                     </h3>
-                                                    <p className="text-sm text-emerald-700/80 font-medium">کد سیستمی: <span dir="ltr">{camp.code}</span> (ظرفیت نامحدود)</p>
+                                                    <p className="text-sm text-brand-700/80 font-medium">کد سیستمی: <span dir="ltr">{camp.code}</span> (ظرفیت نامحدود)</p>
                                                 </div>
                                                 <div className="flex flex-col gap-3 w-full md:w-auto">
                                                     <Button
                                                         onClick={() => handleTogglePublic(camp)}
                                                         disabled={isToggling === camp.id}
                                                         variant="outline"
-                                                        className={`font-bold h-12 px-8 ${camp.is_active ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200'}`}
+                                                        className={`font-bold h-12 px-8 ${camp.is_active ? 'text-saffron-700 hover:text-saffron-700 hover:bg-saffron-50 border-saffron-200' : 'text-brand-600 hover:text-brand-700 hover:bg-brand-50 border-brand-200'}`}
                                                     >
                                                         {isToggling === camp.id ? <Loader2 className="w-5 h-5 animate-spin" /> : camp.is_active ? "غیرفعال کردن (مخفی)" : "روشن کردن و نمایش مجدد"}
                                                     </Button>
@@ -271,7 +272,7 @@ export default function OwnerCampaignsPage() {
                                                 className="h-14 text-xl text-center font-black bg-white rounded-xl"
                                                 dir="ltr"
                                             />
-                                            <Button type="submit" disabled={isCreating} className="h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 rounded-xl shadow-lg">
+                                            <Button type="submit" disabled={isCreating} className="h-14 bg-brand-600 hover:bg-brand-700 text-white font-bold px-8 rounded-xl shadow-lg">
                                                 {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : "ایجاد کمپین و نمایش در سایت"}
                                             </Button>
                                         </div>
@@ -297,30 +298,30 @@ export default function OwnerCampaignsPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {privateCampaigns.map((camp) => (
                                             <div key={camp.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden transition-all hover:shadow-md">
-                                                <div className={`absolute top-0 right-0 w-1.5 h-full ${camp.is_active ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                                <div className={`absolute top-0 right-0 w-1.5 h-full ${camp.is_active ? "bg-brand-500" : "bg-rose-500"}`} />
 
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div>
-                                                        <h3 className="text-xl font-black tracking-widest text-slate-800" dir="ltr">{camp.code}</h3>
+                                                        <h3 className="text-xl font-black tracking-widest text-brand-800" dir="ltr">{camp.code}</h3>
                                                         <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md mt-2 inline-block">
                                                             {camp.discount_percent ? `${camp.discount_percent}٪ تخفیف` : "بدون درصد"}
                                                         </span>
                                                     </div>
                                                     <div className="text-center">
-                                                        <span className="block text-2xl font-black text-slate-900">{camp.current_usage}</span>
-                                                        <span className="text-[10px] font-bold text-gray-400">از {camp.max_usage}</span>
+                                                        <span className="block text-2xl font-black text-brand-900">{camp.current_usage}</span>
+                                                        <span className="text-[10px] font-bold text-gray-500">از {camp.max_usage}</span>
                                                     </div>
                                                 </div>
 
                                                 {/* نوار پیشرفت ظرفیت */}
                                                 <div className="w-full bg-gray-100 rounded-full h-2 mb-6">
                                                     <div
-                                                        className="bg-slate-800 h-2 rounded-full transition-all duration-500"
+                                                        className="bg-brand-800 h-2 rounded-full transition-all duration-500"
                                                         style={{ width: `${Math.min((camp.current_usage / camp.max_usage) * 100, 100)}%` }}
                                                     />
                                                 </div>
 
-                                                <Button onClick={() => openUsagesModal(camp)} variant="outline" className="w-full border-slate-200 hover:bg-slate-50 font-bold text-slate-700">
+                                                <Button onClick={() => openUsagesModal(camp)} variant="outline" className="w-full border-gray-200 hover:bg-gray-50 font-bold text-gray-700">
                                                     <Users className="w-4 h-4 ml-2" />
                                                     مشاهده مشتریان ثبت‌نامی
                                                 </Button>
@@ -337,9 +338,9 @@ export default function OwnerCampaignsPage() {
 
             {/* مودال ساخت کد اختصاصی جدید */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-brand-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200">
-                        <button onClick={() => setIsCreateModalOpen(false)} className="absolute top-4 left-4 text-gray-400 hover:text-gray-700"><X className="w-6 h-6" /></button>
+                        <button onClick={() => setIsCreateModalOpen(false)} className="absolute top-4 left-4 text-gray-500 hover:text-gray-700"><X className="w-6 h-6" /></button>
                         <h3 className="text-xl font-black text-gray-900 mb-6">ایجاد کد معرف اختصاصی</h3>
 
                         <form onSubmit={handleCreateCampaign} className="space-y-4">
@@ -357,7 +358,7 @@ export default function OwnerCampaignsPage() {
                                     <Input type="number" required min="1" value={newCampaign.max_usage} onChange={(e) => setNewCampaign({ ...newCampaign, max_usage: e.target.value })} placeholder="مثلاً 50" className="h-12" />
                                 </div>
                             </div>
-                            <Button type="submit" disabled={isCreating} className="w-full h-14 mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-base shadow-lg">
+                            <Button type="submit" disabled={isCreating} className="w-full h-14 mt-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-base shadow-lg">
                                 {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : "ثبت و فعال‌سازی کد"}
                             </Button>
                         </form>
@@ -367,13 +368,13 @@ export default function OwnerCampaignsPage() {
 
             {/* مودال لیست مشتریان (Usages) - مشترک برای هر دو تب */}
             {selectedCampaign && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-brand-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <div>
-                                <h3 className="text-lg font-black text-gray-900">لیست مشتریان کد: <span className="font-mono text-emerald-600" dir="ltr">{selectedCampaign.code}</span></h3>
+                                <h3 className="text-lg font-black text-gray-900">لیست مشتریان کد: <span className="font-mono text-brand-600" dir="ltr">{selectedCampaign.code}</span></h3>
                             </div>
-                            <button onClick={() => setSelectedCampaign(null)} className="text-gray-400 hover:text-rose-500 bg-white p-2 rounded-xl transition shadow-sm"><X className="w-5 h-5" /></button>
+                            <button onClick={() => setSelectedCampaign(null)} className="text-gray-500 hover:text-rose-500 bg-white p-2 rounded-xl transition shadow-sm"><X className="w-5 h-5" /></button>
                         </div>
 
                         <div className="p-6 overflow-y-auto flex-1 bg-gray-50/30">
@@ -388,16 +389,16 @@ export default function OwnerCampaignsPage() {
                                             <div>
                                                 <div className="font-bold text-gray-900 text-base">{usage.client_name || "کاربر ناشناس"}</div>
                                                 <div className="text-sm font-medium text-gray-500 mt-1" dir="ltr">{usage.client_phone}</div>
-                                                <div className="text-xs text-gray-400 mt-2 font-medium bg-gray-50 inline-block px-2 py-1 rounded-md">{new Date(usage.claimed_at).toLocaleDateString('fa-IR')}</div>
+                                                <div className="text-xs text-gray-500 mt-2 font-medium bg-gray-50 inline-block px-2 py-1 rounded-md">{new Date(usage.claimed_at).toLocaleDateString('fa-IR')}</div>
                                             </div>
                                             <div className="sm:text-left text-right">
                                                 {usage.is_redeemed ? (
-                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-sm font-bold">
+                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-700 border border-brand-100 rounded-lg text-sm font-bold">
                                                         <CheckCircle className="w-4 h-4" />
                                                         تخفیف استفاده شده
                                                     </div>
                                                 ) : (
-                                                    <Button onClick={() => handleRedeem(usage.id)} size="sm" className="bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg px-6 h-10 w-full sm:w-auto shadow-md">
+                                                    <Button onClick={() => handleRedeem(usage.id)} size="sm" className="bg-brand-800 hover:bg-brand-700 text-white font-bold rounded-lg px-6 h-10 w-full sm:w-auto shadow-md">
                                                         اعمال تخفیف (سوزاندن)
                                                     </Button>
                                                 )}

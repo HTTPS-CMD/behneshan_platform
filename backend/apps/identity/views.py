@@ -7,17 +7,20 @@ from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from .tokens import issue_tokens
 from apps.directory.models import Business, DiscountCampaign, CampaignUsage
 from django.contrib.auth import get_user_model
+from django.contrib.auth.signals import user_logged_in
 from rest_framework import serializers
 from rest_framework import viewsets
 from rest_framework.permissions import IsAdminUser
 from django.db import transaction
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
-from ipware import get_client_ip
-from analytics.models import UserLoginLog
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -42,6 +45,17 @@ def _dev_mode_without_sms():
     return settings.DEBUG and not settings.API_IR_KEY
 
 
+def _client_ip(request):
+    """IP واقعی کاربر؛ فقط به تعداد پروکسیِ مورد اعتماد (NUM_PROXIES) از X-Forwarded-For استفاده می‌کند تا قابل جعل نباشد"""
+    num_proxies = settings.REST_FRAMEWORK.get('NUM_PROXIES') or 0
+    if num_proxies > 0:
+        xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        addrs = [a.strip() for a in xff.split(',') if a.strip()]
+        if addrs:
+            return addrs[-min(num_proxies, len(addrs))]
+    return request.META.get('REMOTE_ADDR')
+
+
 def _hit_limit(key, limit, window):
     """شمارنده‌ی ساده در کش؛ True یعنی از سقف عبور کرده"""
     added = cache.add(key, 1, timeout=window)
@@ -56,6 +70,9 @@ def _hit_limit(key, limit, window):
 
 
 class GenerateOTPView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_request'
+
     def post(self, request):
         action = request.data.get('action')  # 'login' یا 'register'
         phone_number = str(request.data.get('phone_number') or '').strip()
@@ -71,7 +88,7 @@ class GenerateOTPView(APIView):
             return Response({"error": "کد قبلاً ارسال شده است. لطفاً ۲ دقیقه صبر کنید."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
         # --- محدودیت هر IP ---
-        ip, _ = get_client_ip(request)
+        ip = _client_ip(request)
         if ip and _hit_limit(f"otp_ip_{ip}", OTP_IP_LIMIT_PER_HOUR, 3600):
             return Response({"error": "تعداد درخواست‌ها زیاد است. لطفاً بعداً تلاش کنید."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
@@ -151,6 +168,9 @@ class GenerateOTPView(APIView):
 
 
 class VerifyOTPView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_verify'
+
     def post(self, request):
         phone_number = request.data.get('phone_number')
         user_otp = request.data.get('otp_code')
@@ -158,7 +178,12 @@ class VerifyOTPView(APIView):
 
         cached_data = cache.get(f"otp_data_{phone_number}")
 
-        if cached_data and str(cached_data['otp']) == str(user_otp):
+        # --- سقف تلاش برای هر کد: بعد از ۵ بار، کد فعلی باطل می‌شود ---
+        if phone_number and _hit_limit(f"otp_attempts_{phone_number}", OTP_MAX_VERIFY_ATTEMPTS, OTP_TTL_SECONDS):
+            cache.delete(f"otp_data_{phone_number}")
+            return Response({"error": "تعداد تلاش‌ها زیاد بود. لطفاً کد جدید دریافت کنید."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        if cached_data and secrets.compare_digest(str(cached_data['otp']), str(user_otp or '')):
             try:
                 with transaction.atomic():
                     # ۱. ابتدا کد معرف را بررسی می‌کنیم (قبل از ساختن کاربر در دیتابیس)
@@ -213,20 +238,24 @@ class VerifyOTPView(APIView):
                 # پاک کردن کد تایید از کش بعد از موفقیت‌آمیز بودن همه مراحل
                 cache.delete(f"otp_data_{phone_number}")
 
-                refresh = RefreshToken.for_user(user)
-                role_val = getattr(user, 'role', 'CLIENT')
+                tokens = issue_tokens(user)
+
+                # ثبت ورود در «ورودهای اخیر» پنل ادمین (و به‌روز شدن last_login).
+                # ورود با OTP/JWT سیگنال ورود جنگو را خودکار نمی‌فرستد؛ اینجا دستی فرستاده می‌شود.
+                # اگر ثبت لاگ به هر دلیلی خطا داد، ورود کاربر نباید خراب شود.
+                try:
+                    user_logged_in.send(sender=user.__class__, request=request, user=user)
+                except Exception:
+                    logger.exception("Login log failed for %s", phone_number)
 
                 return Response({
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                    'role': role_val,
+                    **tokens,
                     'message': 'ورود با موفقیت انجام شد.'
                 }, status=status.HTTP_200_OK)
 
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                return Response({"error": f"خطای سرور: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except Exception:
+                logger.exception("VerifyOTP failed for %s", phone_number)
+                return Response({"error": "خطای داخلی سرور. لطفاً دوباره تلاش کنید."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({"error": "کد تایید نامعتبر یا منقضی شده است."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -293,3 +322,52 @@ class ClientReferralsView(APIView):
             "total_invited_count": invited_users.count(),
             "friends": friends_list
         }, status=status.HTTP_200_OK)
+
+
+# ------------------------------------------------------------------
+# نشست: تمدید و خروج (H6)
+# ------------------------------------------------------------------
+class SessionRefreshView(APIView):
+    """
+    refresh توکن را می‌گیرد، آن را باطل (blacklist) می‌کند و یک جفت توکن تازه با نقش فعلی کاربر برمی‌گرداند.
+    جایگزین TokenRefreshView پیش‌فرض است تا اگر نقش کاربر عوض شد (مثلاً بعد از ثبت کسب‌وکار) توکن جدید نقش درست را داشته باشد.
+    """
+    authentication_classes = []
+    permission_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'token_refresh'
+
+    def post(self, request):
+        raw = request.data.get('refresh')
+        invalid = Response({"detail": "نشست منقضی شده است. دوباره وارد شوید.", "code": "token_not_valid"},
+                           status=status.HTTP_401_UNAUTHORIZED)
+        if not raw:
+            return invalid
+        try:
+            old = RefreshToken(raw)  # امضا، انقضا و blacklist را بررسی می‌کند
+        except TokenError:
+            return invalid
+        user = User.objects.filter(pk=old.get('user_id'), is_active=True).first()
+        if not user:
+            return invalid
+        try:
+            old.blacklist()
+        except Exception:
+            logger.exception("Blacklisting refresh token failed")
+            return invalid
+        return Response(issue_tokens(user), status=status.HTTP_200_OK)
+
+
+class LogoutView(APIView):
+    """refresh توکن را باطل می‌کند تا بعد از خروج قابل استفاده نباشد."""
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        raw = request.data.get('refresh')
+        if raw:
+            try:
+                RefreshToken(raw).blacklist()
+            except TokenError:
+                pass  # توکن از قبل نامعتبر یا باطل بوده
+        return Response({"message": "از حساب خارج شدید."}, status=status.HTTP_200_OK)

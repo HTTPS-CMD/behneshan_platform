@@ -1,0 +1,56 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import TaxonomyLanding, { type LandingBusiness } from "@/components/site/TaxonomyLanding";
+import { absUrl, applySeoOverride, getJson, getSeoOverride } from "@/lib/seo";
+
+// صفحه‌ی فرود سئو برای هر دسته؛ لیست کسب‌وکارها سمت سرور خوانده می‌شود
+export const dynamic = "force-dynamic";
+
+type Tax = { id: string; name: string; slug: string };
+type Paged = { count: number; results: LandingBusiness[] };
+
+async function load(rawSlug: string) {
+  const slug = decodeURIComponent(rawSlug);
+  const all = await getJson<Tax[]>("/taxonomy/categories/", 300);
+  const t = all?.find((x) => x.slug === slug);
+  if (!t) return null;
+  const list = await getJson<Paged>(`/directory/businesses/?category=${t.id}&page_size=50`, 300);
+  return { t, businesses: list?.results ?? [], total: list?.count ?? 0 };
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await load(slug);
+  if (!data) return { title: "صفحه پیدا نشد | چهارسوق", robots: { index: false, follow: false } };
+  const { t, total } = data;
+  const title = `${t.name} در اصفهان | چهارسوق`;
+  const description = `فهرست ${t.name} در اصفهان؛ آدرس، تماس، تخفیف و نظرات مشتریان کسب‌وکارهای عضو شبکه‌ی چهارسوق.`;
+  const url = absUrl(`/category/${encodeURIComponent(t.slug)}`);
+  const base: Metadata = {
+    title: { absolute: title },
+    description,
+    alternates: { canonical: url },
+    // صفحه‌ی بدون کسب‌وکار محتوای کم‌ارزش است؛ تا وقتی خالی است ایندکس نشود
+    robots: total === 0 ? { index: false, follow: true } : undefined,
+    openGraph: { type: "website", locale: "fa_IR", siteName: "چهارسوق", title, description, url },
+  };
+  // مقدار دستی ادمین (پنل ← سئو) در صورت وجود جای مقدار خودکار می‌نشیند
+  return applySeoOverride(base, await getSeoOverride("category", t.slug));
+}
+
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const data = await load(slug);
+  if (!data) notFound();
+  const { t, businesses, total } = data;
+  return (
+    <TaxonomyLanding
+      title={`${t.name} در اصفهان`}
+      subtitle={`فهرست ${t.name} و کسب‌وکارهای مرتبط در شبکه‌ی چهارسوق`}
+      intro={`با چهارسوق بهترین ${t.name} اصفهان را پیدا کنید؛ آدرس، شماره تماس، تخفیف‌ها و نظرات واقعی مشتریان هر کسب‌وکار را ببینید و با کارت چهارسوق از تخفیف و کش‌بک استفاده کنید.`}
+      path={`/category/${encodeURIComponent(t.slug)}`}
+      businesses={businesses}
+      total={total}
+    />
+  );
+}

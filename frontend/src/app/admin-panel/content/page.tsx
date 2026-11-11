@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
-import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save, FileText } from "lucide-react";
 
@@ -24,11 +23,8 @@ export default function AdminContentSettings() {
         const fetchContent = async () => {
             setIsLoading(true);
             try {
-                const token = Cookies.get("access_token");
-                // استفاده از API ادمین یا عمومی برای گرفتن دیتای فعلی
-                const res = await api.get(`/directory/content/${selectedPage}/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                // توکن را اینترسپتور api خودش اضافه می‌کند
+                const res = await api.get(`/directory/content/${selectedPage}/`);
                 setContent({ title: res.data.title || "", content: res.data.content || "" });
             } catch (error) {
                 console.error("خطا در دریافت اطلاعات", error);
@@ -44,10 +40,7 @@ export default function AdminContentSettings() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const token = Cookies.get("access_token");
-            await api.put(`/directory/admin/content/${selectedPage}/`, content, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.put(`/directory/admin/content/${selectedPage}/`, content);
             alert("تغییرات با موفقیت ذخیره شد!");
         } catch (error) {
             alert("خطا در ذخیره اطلاعات.");

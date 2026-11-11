@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>چهارسوق — پروتوتایپ طراحی جدید</title>
+<meta name="description" content="پروتوتایپ طراحی جدید صفحه اصلی چهارسوق: دایرکتوری کسب‌وکار و تخفیف‌های شهر">
+<!-- در پروداکشن این فونت‌ها را self-host کنید (سرور ایران دسترسی بین‌المللی ندارد) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ---- Brand tokens: کاشی فیروزه‌ای اصفهان + زعفرانی/مرجانی بازار ---- */
+  --turq-950:#062424; --turq-900:#0B2E2E; --turq-800:#0B3B3C; --turq-700:#0B6E6D; --turq-600:#0E7C7B; --turq-300:#9AE6E0; --turq-100:#DDF5F2;
+  --coral:#FF7A45; --coral-700:#C2410C; --saffron:#F4B400; --rose:#E11D74;
+  --cream:#FFF8EF; --sand:#F6EBDD; --card:#FFFFFF; --ink:#14231F; --muted:#5B6B66; --line:#EADFCF;
+  --radius-sm:12px; --radius:20px; --radius-lg:32px;
+  --shadow-1:0 1px 2px rgba(20,35,31,.06),0 4px 16px rgba(20,35,31,.06);
+  --shadow-2:0 12px 40px -12px rgba(11,59,60,.28);
+  --ease-out:cubic-bezier(.16,1,.3,1); --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --font-body:"Vazirmatn",Tahoma,system-ui,sans-serif; --font-display:"Lalezar","Vazirmatn",Tahoma,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:clip;scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--font-body);background:var(--cream);color:var(--ink);font-size:16px;line-height:1.75;overflow-x:clip;font-feature-settings:"ss01"}
+img,svg{display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+:focus-visible{outline:3px solid var(--coral);outline-offset:3px;border-radius:8px}
+.container{width:min(1200px,100% - 32px);margin-inline:auto}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.display{font-family:var(--font-display);font-weight:400;letter-spacing:0;line-height:1.25}
+
+/* ============ Header ============ */
+.header{position:sticky;top:0;z-index:50;transition:background .3s,box-shadow .3s,backdrop-filter .3s}
+.header.scrolled{background:rgba(255,248,239,.82);backdrop-filter:blur(14px) saturate(1.4);box-shadow:0 1px 0 var(--line)}
+.header .row{display:flex;align-items:center;gap:24px;height:72px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:28px;color:var(--turq-800)}
+.logo svg{width:38px;height:38px;transition:transform .8s var(--ease-spring)}
+.logo:hover svg{transform:rotate(90deg)}
+.nav{display:flex;gap:4px;margin-inline-start:12px}
+.nav a{padding:8px 14px;border-radius:999px;font-weight:500;color:var(--muted);transition:color .2s,background .2s}
+.nav a:hover,.nav a[aria-current]{color:var(--turq-800);background:var(--turq-100)}
+.header .actions{margin-inline-start:auto;display:flex;gap:10px;align-items:center}
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:999px;font-weight:700;transition:transform .2s var(--ease-out),box-shadow .2s,background .2s}
+.btn:active{transform:scale(.97)}
+.btn-ghost{color:var(--turq-800)} .btn-ghost:hover{background:var(--turq-100)}
+.btn-primary{background:var(--coral);color:var(--ink);box-shadow:0 8px 24px -8px rgba(255,122,69,.7)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 30px -10px rgba(255,122,69,.8)}
+.btn-dark{background:var(--turq-800);color:#fff} .btn-dark:hover{background:var(--turq-700)}
+.icon{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.menu-btn{display:none;width:44px;height:44px;border-radius:12px;align-items:center;justify-content:center}
+
+/* ============ Stories ============ */
+.stories{display:flex;gap:18px;overflow-x:auto;padding:12px 2px 18px;scrollbar-width:none;scroll-snap-type:x mandatory}
+.stories::-webkit-scrollbar{display:none}
+.story{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;width:76px;scroll-snap-align:start}
+.story .ring{width:72px;height:72px;border-radius:50%;padding:3px;background:conic-gradient(from 0deg,var(--coral),var(--saffron),var(--rose),var(--turq-600),var(--coral));animation:spin 6s linear infinite}
+.story .ring>span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--cream);border:3px solid var(--cream);animation:spin 6s linear infinite reverse}
+.story .ring i{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;font-style:normal;font-weight:800;color:#fff;font-size:20px}
+.story small{font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.story.seen .ring{background:var(--line);animation:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============ Hero ============ */
+.hero{position:relative;margin-top:8px;border-radius:var(--radius-lg);overflow:hidden;background:var(--turq-800);color:#fff;isolation:isolate}
+.hero .pattern{position:absolute;inset:-20%;z-index:-2;opacity:.18;animation:drift 60s linear infinite}
+@keyframes drift{to{transform:rotate(360deg)}}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(60% 80% at 85% 10%,rgba(255,122,69,.45),transparent 60%),radial-gradient(50% 70% at 10% 100%,rgba(154,230,224,.35),transparent 60%)}
+.hero-inner{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:40px;padding:72px 56px 56px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);font-size:14px;font-weight:500}
+.eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--saffron);box-shadow:0 0 0 0 rgba(244,180,0,.7);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(244,180,0,0)}100%{box-shadow:0 0 0 0 rgba(244,180,0,0)}}
+.hero h1{font-size:clamp(40px,6vw,72px);margin:18px 0 14px}
+.hero h1 .w{display:inline-block;opacity:0;transform:translateY(30px) rotate(-3deg);transition:opacity .7s var(--ease-out),transform .9s var(--ease-spring)}
+.hero h1.in .w{opacity:1;transform:none}
+.rotator{position:relative;display:grid;justify-items:start;color:var(--saffron)}
+.hero h1 .w.rotator{display:grid}
+.rotator span{grid-area:1/1;opacity:0;transform:translateY(60%);transition:opacity .5s var(--ease-out),transform .6s var(--ease-out);white-space:nowrap}
+.rotator span.on{opacity:1;transform:none}
+.rotator span.out{opacity:0;transform:translateY(-60%)}
+.hero p.lead{font-size:18px;color:#D7EEEB;max-width:520px}
+
+.search{margin-top:28px;display:flex;gap:8px;padding:8px;background:#fff;border-radius:22px;box-shadow:0 20px 50px -20px rgba(0,0,0,.5);color:var(--ink)}
+.search label{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:0 14px;min-height:52px;border-radius:14px;transition:background .2s}
+.search label:hover{background:var(--cream)}
+.search label+label{border-inline-start:1px solid var(--line)}
+.search input,.search select{min-width:0;border:0;outline:0;background:transparent;font:inherit;width:100%;color:var(--ink)}
+.search input::placeholder{color:#7C8B86}
+.search .icon{color:var(--turq-600)}
+.search .btn{min-height:52px;border-radius:14px;padding:0 26px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;font-size:14px}
+.chips span{color:#BFE3DF}
+.chips a{padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);transition:background .2s}
+.chips a:hover{background:rgba(255,255,255,.22)}
+
+.hero-art{position:relative;height:420px}
+.float-card{position:absolute;background:#fff;color:var(--ink);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow-2);will-change:transform;transition:transform .2s linear}
+.fc-1{top:10px;inset-inline-start:0;width:250px;animation:bob 6s ease-in-out infinite}
+.fc-2{top:205px;inset-inline-end:0;width:220px;animation:bob 7s ease-in-out -2s infinite}
+.fc-3{bottom:0;inset-inline-start:40px;width:230px;animation:bob 8s ease-in-out -4s infinite}
+@keyframes bob{50%{translate:0 -12px}}
+.fc-thumb{height:96px;border-radius:14px;margin-bottom:10px;position:relative;overflow:hidden}
+.fc-thumb .badge{position:absolute;top:8px;inset-inline-end:8px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:var(--coral);color:var(--ink)}
+.badge.gold{background:var(--saffron)}
+.badge.ok{background:var(--turq-100);color:var(--turq-700)}
+.fc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.fc-title{font-weight:800;font-size:15px;color:var(--ink)}
+.stars{color:var(--saffron);display:inline-flex;align-items:center;gap:2px;font-weight:700;font-size:13px}
+.stars .icon{width:14px;height:14px;fill:currentColor;stroke:none}
+
+/* ============ Stats ============ */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:-36px 40px 0;position:relative;z-index:2}
+.stat{background:var(--card);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow-1);display:flex;align-items:center;gap:14px}
+.stat .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex:none}
+.stat b{display:block;font-size:26px;font-weight:900;line-height:1.2}
+.stat small{color:var(--muted);font-size:14px}
+
+/* ============ Sections ============ */
+section.block{padding:72px 0 0}
+.sec-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:28px}
+.sec-head h2{font-size:clamp(28px,3.4vw,40px)}
+.sec-head p{color:var(--muted)}
+.link-more{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--turq-700);white-space:nowrap}
+.link-more .icon{transition:transform .25s var(--ease-out)}
+.link-more:hover .icon{transform:translateX(-4px)}
+
+/* Categories */
+.cats{display:grid;grid-template-columns:repeat(8,1fr);gap:14px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 8px;border-radius:var(--radius);background:var(--card);border:1px solid var(--line);text-align:center;font-weight:700;font-size:14px;transition:transform .35s var(--ease-spring),box-shadow .3s,border-color .3s}
+.cat .ic{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;transition:transform .5s var(--ease-spring)}
+.cat .ic .icon{width:26px;height:26px}
+.cat:hover{transform:translateY(-6px);box-shadow:var(--shadow-2);border-color:transparent}
+.cat:hover .ic{transform:rotate(-8deg) scale(1.08)}
+.cat small{font-weight:400;color:var(--muted);font-size:12px}
+
+/* Deals */
+.deals{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.deal{position:relative;background:var(--card);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-1);transition:transform .4s var(--ease-out),box-shadow .4s}
+.deal:hover{transform:translateY(-6px);box-shadow:var(--shadow-2)}
+.deal .media{height:180px;position:relative;overflow:hidden}
+.deal .media .art{position:absolute;inset:0;transition:transform .8s var(--ease-out)}
+.deal:hover .media .art{transform:scale(1.07)}
+.deal .media .badge{position:absolute;top:14px;inset-inline-start:14px;font-size:14px;padding:6px 14px}
+.timer{position:absolute;bottom:12px;inset-inline-start:12px;display:flex;gap:4px;direction:ltr}
+.timer span{background:rgba(6,36,36,.78);backdrop-filter:blur(6px);color:#fff;border-radius:8px;padding:2px 8px;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;min-width:34px;text-align:center}
+.deal .body{padding:18px 20px 20px}
+.deal h3{font-size:17px;font-weight:800;margin-bottom:4px}
+.price{display:flex;align-items:baseline;gap:10px;margin:10px 0 14px}
+.price b{font-size:22px;font-weight:900;color:var(--turq-700)}
+.price s{color:#8A9893;font-size:14px}
+.cap{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:6px}
+.bar{height:8px;border-radius:99px;background:var(--sand);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--saffron),var(--coral));transition:width 1.4s var(--ease-out)}
+.reveal.in .bar i{width:var(--w)}
+.deal .cta{margin-top:16px;width:100%}
+
+/* Businesses */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+.tab{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:700;color:var(--muted);transition:all .25s}
+.tab[aria-selected="true"]{background:var(--turq-800);border-color:var(--turq-800);color:#fff}
+.biz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.biz{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .35s var(--ease-out),box-shadow .35s,border-color .35s,opacity .3s}
+.biz:hover{transform:translateY(-4px);box-shadow:var(--shadow-2);border-color:transparent}
+.biz.hide{display:none}
+.biz .cover{height:120px;position:relative}
+.biz .logo-b{position:absolute;bottom:-26px;inset-inline-start:18px;width:60px;height:60px;border-radius:18px;background:#fff;display:grid;place-items:center;box-shadow:var(--shadow-1);font-family:var(--font-display);font-size:26px}
+.biz .fav{position:absolute;top:12px;inset-inline-end:12px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.9);display:grid;place-items:center;transition:transform .3s var(--ease-spring)}
+.biz .fav:hover{transform:scale(1.12)}
+.biz .fav.on .icon{fill:var(--rose);stroke:var(--rose)}
+.biz .fav.pop{animation:pop .45s var(--ease-spring)}
+@keyframes pop{40%{transform:scale(1.35)}}
+.biz .content{padding:36px 18px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.biz h3{font-size:17px;font-weight:800;display:flex;align-items:center;gap:6px}
+.biz h3 .icon{width:18px;height:18px;color:var(--turq-600)}
+.biz .meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted)}
+.biz .meta span{display:inline-flex;align-items:center;gap:4px}
+.biz .meta .icon{width:15px;height:15px}
+.biz .desc{font-size:14px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.code{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;border:1.5px dashed var(--coral);background:#FFF3EC;font-size:14px}
+.code b{font-family:ui-monospace,monospace;direction:ltr;letter-spacing:.5px}
+.code button{min-height:36px;padding:0 12px;border-radius:10px;background:var(--ink);color:#fff;font-size:13px;font-weight:700}
+
+/* Marquee */
+.marquee{margin-top:72px;background:var(--ink);color:var(--cream);padding:18px 0;overflow:hidden;transform:rotate(-1.5deg) scale(1.03)}
+.marquee .track{display:flex;gap:48px;width:max-content;animation:marq 30s linear infinite;font-family:var(--font-display);font-size:28px}
+.marquee .track span{display:inline-flex;align-items:center;gap:48px}
+.marquee .track span::after{content:"✦";color:var(--coral);font-size:20px}
+@keyframes marq{to{transform:translateX(50%)}}
+
+/* VIP */
+.vip{position:relative;margin-top:72px;border-radius:var(--radius-lg);background:var(--turq-950);color:#fff;overflow:hidden;padding:56px}
+.vip::before{content:"";position:absolute;inset:0;background:radial-gradient(40% 60% at 15% 20%,rgba(244,180,0,.25),transparent 70%)}
+.vip-grid{position:relative;display:grid;grid-template-columns:.9fr 1.1fr;gap:40px;align-items:center}
+.vip h2{font-size:clamp(30px,4vw,46px)}
+.vip p{color:#C9D6D2;margin:12px 0 22px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.plan{border-radius:var(--radius);padding:22px 18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);position:relative;overflow:hidden;transition:transform .35s var(--ease-out),background .3s}
+.plan:hover{transform:translateY(-6px);background:rgba(255,255,255,.1)}
+.plan.best{background:linear-gradient(160deg,#F4B400,#FF7A45);color:var(--ink);border:0}
+.plan.best::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(100%);animation:shine 3.5s ease-in-out infinite}
+@keyframes shine{60%,100%{transform:translateX(-100%)}}
+.plan h3{font-weight:800;font-size:18px}
+.plan .pct{font-size:44px;font-weight:900;line-height:1.1;margin:10px 0 4px}
+.plan small{opacity:.8}
+.plan ul{list-style:none;margin-top:14px;font-size:14px;display:grid;gap:6px}
+.plan li{display:flex;gap:6px;align-items:center}
+.plan li .icon{width:16px;height:16px}
+
+/* Steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:s}
+.step{background:var(--card);border-radius:var(--radius);padding:26px;border:1px solid var(--line);position:relative}
+.step::before{counter-increment:s;content:counter(s,persian);position:absolute;top:-18px;inset-inline-start:22px;width:44px;height:44px;border-radius:14px;background:var(--coral);color:var(--ink);display:grid;place-items:center;font-weight:900;font-size:20px;box-shadow:0 8px 20px -8px rgba(255,122,69,.8)}
+.step h3{margin:14px 0 6px;font-weight:800}
+.step p{color:var(--muted);font-size:15px}
+.biz-cta{margin-top:28px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:28px 32px;border-radius:var(--radius-lg);background:var(--turq-100)}
+.biz-cta h3{font-size:24px}
+
+/* Footer */
+footer{margin-top:88px;background:var(--turq-900);color:#C9D6D2;padding:56px 0 28px}
+.foot{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:28px}
+.foot h4{color:#fff;margin-bottom:12px}
+.foot a{display:block;padding:4px 0;transition:color .2s}
+.foot a:hover{color:var(--turq-300)}
+.foot .logo{color:#fff;display:flex}
+.copy{border-top:1px solid rgba(255,255,255,.1);margin-top:36px;padding-top:20px;font-size:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;translate:-50% calc(100% + 48px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:14px;display:flex;align-items:center;gap:8px;z-index:100;transition:translate .5s var(--ease-spring);box-shadow:var(--shadow-2)}
+.toast.show{translate:-50% 0}
+.toast .icon{color:var(--turq-300)}
+
+/* Reveal on scroll */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease-out),transform .8s var(--ease-out);transition-delay:calc(var(--i,0) * 70ms)}
+.reveal.in{opacity:1;transform:none}
+
+/* Art fills (به‌جای عکس کسب‌وکارها) */
+.a1{background:radial-gradient(circle at 30% 30%,#FFD9A8,transparent 50%),linear-gradient(135deg,#FF7A45,#E11D74)}
+.a2{background:radial-gradient(circle at 70% 20%,#C6F6EE,transparent 50%),linear-gradient(135deg,#0E7C7B,#0B2E2E)}
+.a3{background:radial-gradient(circle at 20% 80%,#FFF1B8,transparent 50%),linear-gradient(135deg,#F4B400,#FF7A45)}
+.a4{background:radial-gradient(circle at 80% 70%,#E9D5FF,transparent 50%),linear-gradient(135deg,#7C3AED,#E11D74)}
+.a5{background:radial-gradient(circle at 30% 70%,#BAE6FD,transparent 50%),linear-gradient(135deg,#0369A1,#0B3B3C)}
+.a6{background:radial-gradient(circle at 60% 30%,#D9F99D,transparent 50%),linear-gradient(135deg,#15803D,#0B3B3C)}
+.art-pattern{position:relative;isolation:isolate}
+.art-pattern::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 0l5 15 15 5-15 5-5 15-5-15L0 20l15-5z' fill='white' fill-opacity='.14'/%3E%3C/svg%3E")}
+
+/* ============ Responsive ============ */
+@media (max-width:1024px){
+  .hero-inner{grid-template-columns:minmax(0,1fr);padding:56px 32px 72px}
+  .hero-art{display:none}
+  .cats{grid-template-columns:repeat(4,1fr)}
+  .deals,.biz-grid{grid-template-columns:repeat(2,1fr)}
+  .vip-grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr);margin:-36px 20px 0}
+  .foot{grid-template-columns:1fr 1fr}
+}
+@media (max-width:720px){
+  .nav,.header .actions .btn-ghost{display:none}
+  .menu-btn{display:inline-flex}
+  .header .actions .btn-primary{padding:0 14px;font-size:14px}
+  .header .actions .btn-primary .icon{display:none}
+  .hero{border-radius:24px}
+  .hero-inner{padding:40px 20px 64px}
+  .search{flex-direction:column}
+  .search label+label{border-inline-start:0;border-top:1px solid var(--line)}
+  .stats{margin:-32px 10px 0;gap:10px}
+  .stat{padding:14px;flex-direction:column;align-items:flex-start;gap:8px}
+  .stat b{font-size:22px}
+  .cats{grid-template-columns:repeat(4,1fr);gap:10px}
+  .cat{padding:14px 4px;font-size:12px}.cat small{display:none}
+  .cat .ic{width:46px;height:46px}
+  .deals,.biz-grid,.plans,.steps{grid-template-columns:1fr}
+  .vip{padding:36px 20px}
+  .sec-head{flex-direction:column;align-items:flex-start}
+  .biz-cta{flex-direction:column;align-items:flex-start}
+  .steps{gap:32px}
+  .foot{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .reveal,.hero h1 .w{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- SVG sprite (آیکون‌های خطی سبک Lucide) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 2 14.4 4.4 17.8 4.1 18.2 7.5 21 9.5 19.6 12.5 21 15.5 18.2 17.5 17.8 20.9 14.4 20.6 12 23 9.6 20.6 6.2 20.9 5.8 17.5 3 15.5 4.4 12.5 3 9.5 5.8 7.5 6.2 4.1 9.6 4.4z"/><path d="m8.5 12.5 2.3 2.3 4.7-4.7"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9 4.5 4h15L21 9M3 9v11h18V9M3 9h18M9 20v-6h6v6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="m2 7 5 5 5-8 5 8 5-5-2 12H4z"/></symbol>
+  <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 0 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4zM6 2v3M10 2v3M14 2v3"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 17H3v-5l2-5h14l2 5v5h-2M5 12h14"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+  <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></symbol>
+  <symbol id="i-paw" viewBox="0 0 24 24"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="4" cy="8" r="2"/><path d="M8 14.5c0-2 1.8-4 4-4s4 2 4 4c0 1.5 2 2.2 2 4a2.5 2.5 0 0 1-4 2c-1.2-.8-2.8-.8-4 0a2.5 2.5 0 0 1-4-2c0-1.8 2-2.5 2-4z"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/></symbol>
+  <symbol id="i-grad" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <!-- لوگو: ستاره‌ی هشت‌پر گره (چهار راهِ بازار) -->
+  <symbol id="logo" viewBox="0 0 40 40"><rect x="6" y="6" width="28" height="28" rx="6" fill="#0E7C7B"/><rect x="6" y="6" width="28" height="28" rx="6" fill="#FF7A45" transform="rotate(45 20 20)" opacity=".92"/><path d="M20 11v18M11 20h18" stroke="#FFF8EF" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="20" r="3.5" fill="#FFF8EF"/></symbol>
+</svg>
+
+<header class="header" id="hdr">
+  <div class="container row">
+    <a class="logo" href="#" aria-label="چهارسوق - صفحه اصلی"><svg aria-hidden="true"><use href="#logo"/></svg>چهارسوق</a>
+    <nav class="nav" aria-label="منوی اصلی">
+      <a href="#" aria-current="page">خانه</a>
+      <a href="#deals">تخفیف‌های امروز</a>
+      <a href="#biz">کسب‌وکارها</a>
+      <a href="#vip">اشتراک VIP</a>
+    </nav>
+    <div class="actions">
+      <a class="btn btn-ghost" href="#">ورود</a>
+      <a class="btn btn-primary" href="#join"><svg class="icon"><use href="#i-store"/></svg>ثبت کسب‌وکار</a>
+      <button class="menu-btn" aria-label="باز کردن منو"><svg class="icon"><use href="#i-menu"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <!-- استوری‌ها -->
+  <div class="stories" aria-label="استوری کسب‌وکارها">
+    <a class="story" href="#"><span class="ring"><span><i class="a1">ع</i></span></span><small>عمارت نقش‌جهان</small></a>
+    <a class="story" href="#"><span class="ring"><span><i class="a4">ا</i></span></span><small>سالن الماس</small></a>
+    <a class="story" href="#"><span class="ring"><span><i class="a5">ک</i></span></span><small>دیتیلینگ کاربن</small></a>
+    <a class="story" href="#"><span class="ring"><span><i class="a3">ر</i></span></span><small>کافه روژان</small></a>
+    <a class="story" href="#"><span class="ring"><span><i class="a6">ا</i></span></span><small>باشگاه اکسیژن</small></a>
+    <a class="story" href="#"><span class="ring"><span><i class="a2">س</i></span></span><small>کلینیک سپنتا</small></a>
+    <a class="story seen" href="#"><span class="ring"><span><i class="a1">ب</i></span></span><small>برگرلند</small></a>
+    <a class="story seen" href="#"><span class="ring"><span><i class="a6">م</i></span></span><small>پت‌شاپ مهرگان</small></a>
+    <a class="story seen" href="#"><span class="ring"><span><i class="a4">ن</i></span></span><small>لیزر نیلوفر</small></a>
+  </div>
+
+  <!-- هیرو -->
+  <section class="hero" aria-labelledby="hero-title">
+    <svg class="pattern" viewBox="0 0 600 600" aria-hidden="true"><defs><pattern id="girih" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M40 0l10 30 30 10-30 10-10 30-10-30L0 40l30-10z" fill="none" stroke="#9AE6E0" stroke-width="1.5"/><circle cx="40" cy="40" r="6" fill="none" stroke="#F4B400" stroke-width="1.2"/></pattern></defs><rect width="600" height="600" fill="url(#girih)"/></svg>
+    <div class="hero-inner">
+      <div>
+        <span class="eyebrow"><span class="dot"></span>۱۲۸ تخفیف تازه همین امروز</span>
+        <h1 class="display" id="hero-title">
+          <span class="w">بهترین</span> <span class="w">تخفیفِ</span><br>
+          <span class="w rotator" aria-live="off"><span class="on">رستوران‌ها</span><span>کافه‌ها</span><span>سالن‌های زیبایی</span><span>باشگاه‌ها</span><span>کلینیک‌ها</span></span>
+          <span class="w">شهرت</span>
+        </h1>
+        <p class="lead">چهارسوقِ شهرت؛ کسب‌وکارهای تأییدشده، کد تخفیف اختصاصی و اشتراک VIP، همه یک‌جا.</p>
+        <form class="search" role="search" onsubmit="event.preventDefault();toast('جستجو اجرا شد (نمونه)')">
+          <label><svg class="icon"><use href="#i-search"/></svg><span class="sr-only">چه چیزی؟</span><input type="search" placeholder="رستوران، آرایشگاه، کارواش..."></label>
+          <label><svg class="icon"><use href="#i-pin"/></svg><span class="sr-only">کجا؟</span>
+            <select aria-label="شهر"><option>اصفهان</option><option>تهران</option><option>شیراز</option></select></label>
+          <button class="btn btn-primary" type="submit">پیدا کن</button>
+        </form>
+        <div class="chips"><span>محبوب:</span><a href="#">کافه</a><a href="#">لیزر</a><a href="#">سرامیک خودرو</a><a href="#">باشگاه</a></div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="float-card fc-1" data-depth="18">
+          <div class="fc-thumb a1 art-pattern"><span class="badge">۲۰٪ تخفیف</span></div>
+          <div class="fc-title">کافه رستوران عمارت</div>
+          <div class="fc-row"><span>میدان نقش جهان</span><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۹</span></div>
+        </div>
+        <div class="float-card fc-2" data-depth="-24">
+          <div class="fc-row" style="margin-bottom:8px"><span class="badge gold"><svg class="icon" style="width:14px;height:14px"><use href="#i-crown"/></svg>VIP طلایی</span></div>
+          <div class="fc-title">۱۵٪ تخفیف همیشگی</div>
+          <div class="fc-row">در همه‌ی کسب‌وکارهای عضو</div>
+        </div>
+        <div class="float-card fc-3" data-depth="12">
+          <div class="fc-row"><span class="fc-title">کد شما آماده‌ست</span><span class="badge ok">فعال</span></div>
+          <div class="code" style="margin-top:10px"><b>EMARAT20</b><span style="font-size:12px;color:var(--muted)">۲ روز مانده</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- آمار -->
+  <div class="stats">
+    <div class="stat reveal" style="--i:0"><span class="ic" style="background:var(--turq-100);color:var(--turq-700)"><svg class="icon"><use href="#i-store"/></svg></span><div><b data-count="1240">۰</b><small>کسب‌وکار تأییدشده</small></div></div>
+    <div class="stat reveal" style="--i:1"><span class="ic" style="background:#FFEDE4;color:var(--coral-700)"><svg class="icon"><use href="#i-tag"/></svg></span><div><b data-count="3850">۰</b><small>کد تخفیف دریافت‌شده</small></div></div>
+    <div class="stat reveal" style="--i:2"><span class="ic" style="background:#FFF6D6;color:#8A6500"><svg class="icon"><use href="#i-users"/></svg></span><div><b data-count="18600">۰</b><small>کاربر فعال</small></div></div>
+    <div class="stat reveal" style="--i:3"><span class="ic" style="background:#FCE7F1;color:var(--rose)"><svg class="icon"><use href="#i-star"/></svg></span><div><b data-count="4.8" data-dec="1">۰</b><small>میانگین رضایت</small></div></div>
+  </div>
+
+  <!-- دسته‌بندی‌ها -->
+  <section class="block" aria-labelledby="cat-title">
+    <div class="sec-head"><div><h2 class="display" id="cat-title">دنبال چی می‌گردی؟</h2><p>دسته‌بندی‌ها از پنل ادمین مدیریت می‌شوند</p></div><a class="link-more" href="#">همه دسته‌ها<svg class="icon"><use href="#i-arrow"/></svg></a></div>
+    <div class="cats">
+      <a class="cat reveal" style="--i:0" href="#"><span class="ic" style="background:#FFEDE4;color:var(--coral-700)"><svg class="icon"><use href="#i-coffee"/></svg></span>رستوران و کافه<small>۲۴۰ مورد</small></a>
+      <a class="cat reveal" style="--i:1" href="#"><span class="ic" style="background:#FCE7F1;color:var(--rose)"><svg class="icon"><use href="#i-scissors"/></svg></span>زیبایی و اسپا<small>۱۸۰ مورد</small></a>
+      <a class="cat reveal" style="--i:2" href="#"><span class="ic" style="background:#E0F2FE;color:#0369A1"><svg class="icon"><use href="#i-car"/></svg></span>خدمات خودرو<small>۹۵ مورد</small></a>
+      <a class="cat reveal" style="--i:3" href="#"><span class="ic" style="background:var(--turq-100);color:var(--turq-700)"><svg class="icon"><use href="#i-pulse"/></svg></span>سلامت و کلینیک<small>۱۳۰ مورد</small></a>
+      <a class="cat reveal" style="--i:4" href="#"><span class="ic" style="background:#DCFCE7;color:#15803D"><svg class="icon"><use href="#i-dumbbell"/></svg></span>ورزش<small>۶۰ مورد</small></a>
+      <a class="cat reveal" style="--i:5" href="#"><span class="ic" style="background:#FFF6D6;color:#8A6500"><svg class="icon"><use href="#i-paw"/></svg></span>پت‌شاپ<small>۴۰ مورد</small></a>
+      <a class="cat reveal" style="--i:6" href="#"><span class="ic" style="background:#EDE9FE;color:#6D28D9"><svg class="icon"><use href="#i-bag"/></svg></span>پوشاک<small>۱۱۰ مورد</small></a>
+      <a class="cat reveal" style="--i:7" href="#"><span class="ic" style="background:#F1F5F9;color:#334155"><svg class="icon"><use href="#i-grad"/></svg></span>آموزش<small>۷۵ مورد</small></a>
+    </div>
+  </section>
+
+  <!-- تخفیف‌های داغ -->
+  <section class="block" id="deals" aria-labelledby="deal-title">
+    <div class="sec-head"><div><h2 class="display" id="deal-title">تخفیف‌های داغِ امروز</h2><p>ظرفیت محدود؛ قبل از تموم شدن بگیرش</p></div><a class="link-more" href="#">همه تخفیف‌ها<svg class="icon"><use href="#i-arrow"/></svg></a></div>
+    <div class="deals">
+      <article class="deal reveal" style="--i:0">
+        <div class="media"><div class="art a1 art-pattern"></div><span class="badge">۲۰٪</span><div class="timer" data-end="6"></div></div>
+        <div class="body"><h3>سینی مخصوص سرآشپز (۴ نفره)</h3><div class="fc-row"><span>کافه رستوران عمارت</span><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۹</span></div>
+          <div class="price"><b>۱٬۱۶۰٬۰۰۰ تومان</b><s>۱٬۴۵۰٬۰۰۰</s></div>
+          <div class="cap"><span>۷۲ نفر گرفتند</span><span>۲۸ باقی‌مانده</span></div><div class="bar"><i style="--w:72%"></i></div>
+          <button class="btn btn-dark cta" data-claim>دریافت کد تخفیف</button></div>
+      </article>
+      <article class="deal reveal" style="--i:1">
+        <div class="media"><div class="art a4 art-pattern"></div><span class="badge">۳۰٪</span><div class="timer" data-end="14"></div></div>
+        <div class="body"><h3>پکیج فیشیال و پاکسازی VIP</h3><div class="fc-row"><span>سالن زیبایی الماس</span><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۸</span></div>
+          <div class="price"><b>۶۸۶٬۰۰۰ تومان</b><s>۹۸۰٬۰۰۰</s></div>
+          <div class="cap"><span>۴۵ نفر گرفتند</span><span>۵۵ باقی‌مانده</span></div><div class="bar"><i style="--w:45%"></i></div>
+          <button class="btn btn-dark cta" data-claim>دریافت کد تخفیف</button></div>
+      </article>
+      <article class="deal reveal" style="--i:2">
+        <div class="media"><div class="art a5 art-pattern"></div><span class="badge">۲۰٪</span><div class="timer" data-end="30"></div></div>
+        <div class="body"><h3>سرامیک ۵ ساله بدنه خودرو</h3><div class="fc-row"><span>دیتیلینگ کاربن</span><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۷</span></div>
+          <div class="price"><b>۹٬۶۰۰٬۰۰۰ تومان</b><s>۱۲٬۰۰۰٬۰۰۰</s></div>
+          <div class="cap"><span>۹۰ نفر گرفتند</span><span>۱۰ باقی‌مانده</span></div><div class="bar"><i style="--w:90%"></i></div>
+          <button class="btn btn-dark cta" data-claim>دریافت کد تخفیف</button></div>
+      </article>
+    </div>
+  </section>
+</main>
+
+<div class="marquee" aria-hidden="true"><div class="track"><span>تخفیف واقعی</span><span>کسب‌وکار تأییدشده</span><span>اشتراک VIP</span><span>کد اختصاصی</span><span>نظرات واقعی مشتری‌ها</span><span>تخفیف واقعی</span><span>کسب‌وکار تأییدشده</span><span>اشتراک VIP</span><span>کد اختصاصی</span><span>نظرات واقعی مشتری‌ها</span></div></div>
+
+<main class="container">
+  <!-- کسب‌وکارها -->
+  <section class="block" id="biz" aria-labelledby="biz-title">
+    <div class="sec-head"><div><h2 class="display" id="biz-title">کسب‌وکارهای منتخب</h2><p>تأییدشده توسط تیم چهارسوق</p></div></div>
+    <div class="tabs" role="tablist" aria-label="فیلتر دسته">
+      <button class="tab" role="tab" aria-selected="true" data-f="all">همه</button>
+      <button class="tab" role="tab" aria-selected="false" data-f="food">خوراک</button>
+      <button class="tab" role="tab" aria-selected="false" data-f="beauty">زیبایی و سلامت</button>
+      <button class="tab" role="tab" aria-selected="false" data-f="car">خودرو</button>
+    </div>
+    <div class="biz-grid">
+      <article class="biz reveal" data-c="food" style="--i:0"><div class="cover a1 art-pattern"><span class="logo-b" style="color:var(--coral-700)">ع</span><button class="fav" aria-label="افزودن به منتخب‌ها" aria-pressed="false"><svg class="icon"><use href="#i-heart"/></svg></button></div>
+        <div class="content"><h3>کافه رستوران عمارت نقش‌جهان<svg class="icon" aria-label="تأییدشده"><use href="#i-check"/></svg></h3>
+          <div class="meta"><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۹ (۴۸)</span><span><svg class="icon"><use href="#i-pin"/></svg>نقش جهان</span><span><svg class="icon"><use href="#i-users"/></svg>۳۲۰ دنبال‌کننده</span></div>
+          <p class="desc">تجربه اصیل‌ترین طعم کباب‌ها و بریانی سنتی اصفهان در فضایی تاریخی با موسیقی زنده.</p>
+          <div class="code"><span>کد: <b>EMARAT20</b></span><button data-copy="EMARAT20"><svg class="icon" style="width:14px;height:14px;display:inline"><use href="#i-copy"/></svg> کپی</button></div></div></article>
+      <article class="biz reveal" data-c="beauty" style="--i:1"><div class="cover a4 art-pattern"><span class="logo-b" style="color:#7C3AED">ا</span><button class="fav" aria-label="افزودن به منتخب‌ها" aria-pressed="false"><svg class="icon"><use href="#i-heart"/></svg></button></div>
+        <div class="content"><h3>سالن زیبایی الماس<svg class="icon" aria-label="تأییدشده"><use href="#i-check"/></svg></h3>
+          <div class="meta"><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۸ (۶۴)</span><span><svg class="icon"><use href="#i-pin"/></svg>چهارباغ بالا</span><span><svg class="icon"><use href="#i-users"/></svg>۵۱۰ دنبال‌کننده</span></div>
+          <p class="desc">میکاپ عروس، احیا و کراتین مو، طراحی ناخن و فیشیال تخصصی پوست با برندهای اورجینال.</p>
+          <div class="code"><span>کد: <b>ALMAS30</b></span><button data-copy="ALMAS30"><svg class="icon" style="width:14px;height:14px;display:inline"><use href="#i-copy"/></svg> کپی</button></div></div></article>
+      <article class="biz reveal" data-c="car" style="--i:2"><div class="cover a5 art-pattern"><span class="logo-b" style="color:#0369A1">ک</span><button class="fav" aria-label="افزودن به منتخب‌ها" aria-pressed="false"><svg class="icon"><use href="#i-heart"/></svg></button></div>
+        <div class="content"><h3>دیتیلینگ و سرامیک کاربن<svg class="icon" aria-label="تأییدشده"><use href="#i-check"/></svg></h3>
+          <div class="meta"><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۷ (۳۱)</span><span><svg class="icon"><use href="#i-pin"/></svg>خیابان ارتش</span><span><svg class="icon"><use href="#i-users"/></svg>۱۹۰ دنبال‌کننده</span></div>
+          <p class="desc">احیای رنگ، نانو سرامیک بدنه، صافکاری بی‌رنگ و صفرشویی VIP خودروهای داخلی و وارداتی.</p>
+          <div class="code"><span>کد: <b>CARBON15</b></span><button data-copy="CARBON15"><svg class="icon" style="width:14px;height:14px;display:inline"><use href="#i-copy"/></svg> کپی</button></div></div></article>
+      <article class="biz reveal" data-c="beauty" style="--i:3"><div class="cover a2 art-pattern"><span class="logo-b" style="color:var(--turq-700)">س</span><button class="fav" aria-label="افزودن به منتخب‌ها" aria-pressed="false"><svg class="icon"><use href="#i-heart"/></svg></button></div>
+        <div class="content"><h3>کلینیک دندانپزشکی سپنتا<svg class="icon" aria-label="تأییدشده"><use href="#i-check"/></svg></h3>
+          <div class="meta"><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۹ (۸۲)</span><span><svg class="icon"><use href="#i-pin"/></svg>توحید میانی</span><span><svg class="icon"><use href="#i-users"/></svg>۶۴۰ دنبال‌کننده</span></div>
+          <p class="desc">ایمپلنت دیجیتال، لمینت سرامیکی و اصلاح طرح لبخند با جدیدترین تجهیزات روز.</p>
+          <div class="code"><span>کد: <b>SEPANTA25</b></span><button data-copy="SEPANTA25"><svg class="icon" style="width:14px;height:14px;display:inline"><use href="#i-copy"/></svg> کپی</button></div></div></article>
+      <article class="biz reveal" data-c="food" style="--i:4"><div class="cover a3 art-pattern"><span class="logo-b" style="color:#8A6500">ر</span><button class="fav" aria-label="افزودن به منتخب‌ها" aria-pressed="false"><svg class="icon"><use href="#i-heart"/></svg></button></div>
+        <div class="content"><h3>کافه بیکری روژان<svg class="icon" aria-label="تأییدشده"><use href="#i-check"/></svg></h3>
+          <div class="meta"><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۸ (۵۳)</span><span><svg class="icon"><use href="#i-pin"/></svg>جلفا</span><span><svg class="icon"><use href="#i-users"/></svg>۴۲۰ دنبال‌کننده</span></div>
+          <p class="desc">قهوه‌های تخصصی تک‌خاستگاه، کروسان کره‌ای و صبحانه‌ی ملل، پخت روزانه.</p>
+          <div class="code"><span>کد: <b>ROJAN15</b></span><button data-copy="ROJAN15"><svg class="icon" style="width:14px;height:14px;display:inline"><use href="#i-copy"/></svg> کپی</button></div></div></article>
+      <article class="biz reveal" data-c="beauty" style="--i:5"><div class="cover a6 art-pattern"><span class="logo-b" style="color:#15803D">ا</span><button class="fav" aria-label="افزودن به منتخب‌ها" aria-pressed="false"><svg class="icon"><use href="#i-heart"/></svg></button></div>
+        <div class="content"><h3>باشگاه بدنسازی اکسیژن<svg class="icon" aria-label="تأییدشده"><use href="#i-check"/></svg></h3>
+          <div class="meta"><span class="stars"><svg class="icon"><use href="#i-star"/></svg>۴.۶ (۲۹)</span><span><svg class="icon"><use href="#i-pin"/></svg>مرداویج</span><span><svg class="icon"><use href="#i-users"/></svg>۲۸۰ دنبال‌کننده</span></div>
+          <p class="desc">سالن کراس‌فیت اختصاصی، بوفه‌ی رژیمی و مربیان رسمی فدراسیون.</p>
+          <div class="code"><span>کد: <b>OXYGEN20</b></span><button data-copy="OXYGEN20"><svg class="icon" style="width:14px;height:14px;display:inline"><use href="#i-copy"/></svg> کپی</button></div></div></article>
+    </div>
+  </section>
+
+  <!-- VIP -->
+  <section class="vip reveal" id="vip" aria-labelledby="vip-title">
+    <div class="vip-grid">
+      <div>
+        <span class="badge gold"><svg class="icon" style="width:14px;height:14px"><use href="#i-crown"/></svg>اشتراک چهارسوق</span>
+        <h2 class="display" id="vip-title" style="margin-top:14px">یه کارت، تخفیف توی همه‌ی شهر</h2>
+        <p>با اشتراک VIP در همه‌ی کسب‌وکارهای عضو تخفیف پایه می‌گیری؛ هر جا کد اختصاصی بهتری بود، سیستم خودش بهترینو اعمال می‌کنه.</p>
+        <a class="btn btn-primary" href="#">مقایسه پلن‌ها</a>
+      </div>
+      <div class="plans">
+        <div class="plan"><h3>برنزی</h3><div class="pct">۵٪</div><small>۹۹ هزار تومان / ماه</small><ul><li><svg class="icon"><use href="#i-ok"/></svg>همه‌ی کسب‌وکارها</li><li><svg class="icon"><use href="#i-ok"/></svg>کیف پول</li></ul></div>
+        <div class="plan"><h3>نقره‌ای</h3><div class="pct">۱۰٪</div><small>۱۷۹ هزار تومان / ماه</small><ul><li><svg class="icon"><use href="#i-ok"/></svg>سود معرفی دوستان</li><li><svg class="icon"><use href="#i-ok"/></svg>کیف پول</li></ul></div>
+        <div class="plan best"><h3>طلایی</h3><div class="pct">۱۵٪</div><small>۲۴۹ هزار تومان / ماه</small><ul><li><svg class="icon"><use href="#i-ok"/></svg>همه‌ی مزایای برنزی</li><li><svg class="icon"><use href="#i-ok"/></svg>تخفیف‌های پیش‌فروش</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- برای کسب‌وکارها -->
+  <section class="block" id="join" aria-labelledby="join-title">
+    <div class="sec-head"><div><h2 class="display" id="join-title">کسب‌وکار داری؟ سه قدم تا مشتری جدید</h2><p>پنل فروشنده با CRM، کمپین و استوری</p></div></div>
+    <div class="steps">
+      <div class="step reveal" style="--i:0"><h3>ثبت‌نام با کد ملی</h3><p>احراز هویت شاهکار و ساخت صفحه‌ی کسب‌وکار در کمتر از ۵ دقیقه.</p></div>
+      <div class="step reveal" style="--i:1"><h3>کمپین تخفیف بساز</h3><p>کد اختصاصی با ظرفیت مشخص بساز و استوری بذار تا دیده بشی.</p></div>
+      <div class="step reveal" style="--i:2"><h3>مشتری رو ثبت کن</h3><p>با شماره‌ی موبایل مشتری، بهترین تخفیف خودکار محاسبه و فاکتور ثبت می‌شه.</p></div>
+    </div>
+    <div class="biz-cta reveal"><div><h3 class="display">همین امروز ویترینت رو توی چهارسوق باز کن</h3><p style="color:var(--muted)">ثبت رایگان، تأیید توسط تیم پشتیبانی</p></div><a class="btn btn-primary" href="#">ثبت کسب‌وکار</a></div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="foot">
+      <div><a class="logo" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>چهارسوق</a><p style="margin-top:12px;max-width:320px">اولین پلتفرم جامع کسب‌وکارهای محلی؛ تخفیف واقعی از کسب‌وکارهای تأییدشده.</p></div>
+      <div><h4>چهارسوق</h4><a href="#">درباره ما</a><a href="#">تماس با ما</a><a href="#">رده‌بندی کاسبان</a></div>
+      <div><h4>کاربران</h4><a href="#">اشتراک VIP</a><a href="#">قوانین مشتریان</a><a href="#">تخفیف‌های امروز</a></div>
+      <div><h4>کسب‌وکارها</h4><a href="#">ثبت کسب‌وکار</a><a href="#">قوانین کسب‌وکار</a><a href="#">درخواست نردبان</a></div>
+    </div>
+    <div class="copy"><span>© ۱۴۰۵ چهارسوق — پروتوتایپ طراحی</span><span>ساخته‌شده با ❤ در اصفهان</span></div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><svg class="icon"><use href="#i-ok"/></svg><span></span></div>
+
+<script>
+(()=>{
+  const fa = n => String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+  const faNum = (n,dec=0) => fa(Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec})).replace(/,/g,'٬').replace('.', '٫');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // header on scroll
+  const hdr = document.getElementById('hdr');
+  addEventListener('scroll',()=>hdr.classList.toggle('scrolled',scrollY>10),{passive:true});
+
+  // hero headline: word-by-word (فارسی را حرف‌به‌حرف تکه نکنید؛ اتصال حروف می‌شکند)
+  const h1 = document.querySelector('.hero h1');
+  h1.querySelectorAll('.w').forEach((w,i)=>w.style.transitionDelay=(i*110)+'ms');
+  requestAnimationFrame(()=>setTimeout(()=>h1.classList.add('in'),80));
+
+  // rotating word
+  const words=[...document.querySelectorAll('.rotator span')]; let wi=0;
+  if(!reduce) setInterval(()=>{const cur=words[wi];cur.classList.remove('on');cur.classList.add('out');
+    wi=(wi+1)%words.length;const nx=words[wi];nx.classList.remove('out');nx.classList.add('on');setTimeout(()=>cur.classList.remove('out'),600);},2200);
+
+  // reveal + count-up
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('in');
+    e.target.querySelectorAll('[data-count]').forEach(countUp);io.unobserve(e.target);}),{threshold:.15,rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  function countUp(el){const to=parseFloat(el.dataset.count),dec=+el.dataset.dec||0,dur=reduce?0:1600,t0=performance.now();
+    const step=t=>{const p=Math.min(1,(t-t0)/(dur||1)),v=to*(1-Math.pow(1-p,4));el.textContent=faNum(v,dec)+(dec?'':'+');if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step);}
+
+  // countdown timers
+  const timers=[...document.querySelectorAll('.timer')].map(t=>({el:t,end:Date.now()+(+t.dataset.end)*3600e3-Math.random()*3e6}));
+  const tick=()=>timers.forEach(({el,end})=>{let s=Math.max(0,Math.floor((end-Date.now())/1000));
+    const h=Math.floor(s/3600),m=Math.floor(s%3600/60),sec=s%60;el.innerHTML=[h,m,sec].map(x=>'<span>'+fa(String(x).padStart(2,'0'))+'</span>').join('');});
+  tick();setInterval(tick,1000);
+
+  // parallax float cards (mouse)
+  const art=document.querySelector('.hero-art');
+  if(art&&!reduce) document.querySelector('.hero').addEventListener('pointermove',e=>{const r=e.currentTarget.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+    art.querySelectorAll('[data-depth]').forEach(c=>{const d=+c.dataset.depth;c.style.transform=`translate(${x*d}px,${y*d}px)`})});
+
+  // filter tabs
+  const tabs=document.querySelectorAll('.tab');
+  tabs.forEach(t=>t.addEventListener('click',()=>{tabs.forEach(x=>x.setAttribute('aria-selected',x===t));const f=t.dataset.f;
+    document.querySelectorAll('.biz').forEach(b=>b.classList.toggle('hide',f!=='all'&&b.dataset.c!==f));}));
+
+  // favorite
+  document.querySelectorAll('.fav').forEach(b=>b.addEventListener('click',()=>{const on=b.classList.toggle('on');b.setAttribute('aria-pressed',on);
+    b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');toast(on?'به فروشگاه‌های منتخب اضافه شد':'از منتخب‌ها حذف شد');}));
+
+  // copy code / claim
+  document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>{navigator.clipboard?.writeText(b.dataset.copy).catch(()=>{});toast('کد '+b.dataset.copy+' کپی شد');}));
+  document.querySelectorAll('[data-claim]').forEach(b=>b.addEventListener('click',()=>{b.innerHTML='<svg class="icon"><use href="#i-ok"/></svg> کد دریافت شد';b.disabled=true;b.style.background='var(--turq-600)';toast('کد تخفیف به پنل شما اضافه شد');}));
+
+  // toast (به‌جای alert)
+  let tt; window.toast=msg=>{const t=document.getElementById('toast');t.querySelector('span').textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2400)};
+})();
+</script>
+</body>
+</html>
