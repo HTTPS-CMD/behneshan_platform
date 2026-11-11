@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { api } from "@/lib/api";
-import Cookies from "js-cookie";
 import Link from "next/link";
-import { useAuthStore } from "@/store/useAuthStore";
+import { refreshSession } from "@/lib/auth";
 import BrandAssetsManager from "@/components/ui/BrandAssetsManager";
+import { toast } from "@/components/ui/toaster";
 
 export default function CreateBusinessPage() {
   const router = useRouter();
@@ -30,8 +30,8 @@ export default function CreateBusinessPage() {
     const fetchTaxonomies = async () => {
       try {
         const [catsRes, locsRes] = await Promise.all([
-          api.get("http://127.0.0.1:8000/api/v1/taxonomy/categories/"),
-          api.get("http://127.0.0.1:8000/api/v1/taxonomy/locations/"),
+          api.get("/taxonomy/categories/"),
+          api.get("/taxonomy/locations/"),
         ]);
         setCategories(catsRes.data);
         setLocations(locsRes.data);
@@ -42,7 +42,6 @@ export default function CreateBusinessPage() {
     fetchTaxonomies();
   }, []);
 
-  const { updateTokensAndRole } = useAuthStore();
 
   // ارسال فرم به بک‌اند
   const onSubmit = async (data: any) => {
@@ -65,28 +64,22 @@ export default function CreateBusinessPage() {
 
       // پاسخ بک‌اند را در یک متغیر ذخیره می‌کنیم
       const response = await api.post(
-        "http://127.0.0.1:8000/api/v1/directory/businesses/create/",
+        "/directory/businesses/create/",
         formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
       );
 
       // --- تغییر کلیدی: بررسی ارتقای نقش کاربر ---
       if (response.data.new_tokens) {
-        const { access, refresh, role } = response.data.new_tokens;
-        // بروزرسانی توکن‌ها و نقش در Zustand و کوکی‌ها
-        updateTokensAndRole(access, refresh, role);
+        // نقش عوض شده؛ نشست از مسیر امن تمدید می‌شود تا توکن و کوکی نقش جدید را داشته باشند (H6)
+        await refreshSession();
       }
 
-      alert("کسب‌وکار با موفقیت ثبت شد!");
+      toast.success("کسب‌وکار با موفقیت ثبت شد!");
       // هدایت مستقیم کاربر به پنل مخصوص صاحبان کسب‌وکار
       router.push("/dashboard/owner");
     } catch (error) {
       console.error(error);
-      alert("خطایی در ثبت کسب‌وکار رخ داد.");
+      toast.error("خطایی در ثبت کسب‌وکار رخ داد.");
     } finally {
       setIsSubmitting(false);
     }
@@ -101,7 +94,7 @@ export default function CreateBusinessPage() {
           </h1>
           <Link
             href="/dashboard/owner"
-            className="text-blue-600 hover:underline"
+            className="text-brand-600 hover:underline"
           >
             بازگشت به داشبورد
           </Link>
@@ -119,7 +112,7 @@ export default function CreateBusinessPage() {
             <input
               {...register("name", { required: true })}
               placeholder="مثال: استودیو وبانو"
-              className="w-full p-3 border rounded-lg focus:outline-none focus:border-blue-500"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:border-brand-500"
             />
           </div>
 
@@ -131,7 +124,7 @@ export default function CreateBusinessPage() {
             <input
               {...register("slug", { required: true })}
               placeholder="مثال: webano-studio"
-              className="w-full p-3 border rounded-lg focus:outline-none focus:border-blue-500 text-left"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:border-brand-500 text-left"
               dir="ltr"
             />
           </div>
@@ -144,7 +137,7 @@ export default function CreateBusinessPage() {
               </label>
               <select
                 {...register("category", { required: true })}
-                className="w-full p-3 border rounded-lg focus:outline-none focus:border-blue-500 bg-white"
+                className="w-full p-3 border rounded-lg focus:outline-none focus:border-brand-500 bg-white"
               >
                 <option value="">انتخاب کنید...</option>
                 {categories.map((cat) => (
@@ -161,7 +154,7 @@ export default function CreateBusinessPage() {
               </label>
               <select
                 {...register("location", { required: true })}
-                className="w-full p-3 border rounded-lg focus:outline-none focus:border-blue-500 bg-white"
+                className="w-full p-3 border rounded-lg focus:outline-none focus:border-brand-500 bg-white"
               >
                 <option value="">انتخاب کنید...</option>
                 {locations.map((loc) => (
@@ -182,7 +175,7 @@ export default function CreateBusinessPage() {
               {...register("description", { required: true })}
               placeholder="خدمات و ویژگی‌های کسب‌وکار خود را بنویسید..."
               rows={4}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:border-blue-500"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:border-brand-500"
             />
           </div>
 
@@ -193,14 +186,14 @@ export default function CreateBusinessPage() {
                 لوگوی برند (نسبت ۱:۱)
               </label>
               {logoFile ? (
-                <div className="flex items-center justify-between bg-green-50 p-4 rounded-xl border border-green-200">
-                  <span className="text-green-700 font-medium">
+                <div className="flex items-center justify-between bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                  <span className="text-emerald-700 font-medium">
                     لوگو با موفقیت تنظیم شد.
                   </span>
                   <button
                     type="button"
                     onClick={() => setLogoFile(null)}
-                    className="text-red-500 font-bold hover:underline"
+                    className="text-rose-500 font-bold hover:underline"
                   >
                     حذف و تغییر
                   </button>
@@ -219,14 +212,14 @@ export default function CreateBusinessPage() {
                 بنر کاور (نسبت ۱۶:۹)
               </label>
               {bannerFile ? (
-                <div className="flex items-center justify-between bg-green-50 p-4 rounded-xl border border-green-200">
-                  <span className="text-green-700 font-medium">
+                <div className="flex items-center justify-between bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                  <span className="text-emerald-700 font-medium">
                     بنر تبلیغاتی با موفقیت تنظیم شد.
                   </span>
                   <button
                     type="button"
                     onClick={() => setBannerFile(null)}
-                    className="text-red-500 font-bold hover:underline"
+                    className="text-rose-500 font-bold hover:underline"
                   >
                     حذف و تغییر
                   </button>
@@ -245,7 +238,7 @@ export default function CreateBusinessPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-6 bg-blue-600 text-white p-4 rounded-lg font-bold hover:bg-blue-700 transition disabled:bg-gray-400 text-lg shadow-md"
+            className="mt-6 bg-brand-600 text-white p-4 rounded-lg font-bold hover:bg-brand-700 transition disabled:bg-gray-400 text-lg shadow-md"
           >
             {isSubmitting ? "در حال ثبت..." : "ثبت نهایی اطلاعات"}
           </button>

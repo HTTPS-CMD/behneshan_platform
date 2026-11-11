@@ -19,8 +19,8 @@ def clear_frontend_cache(modeladmin, request, queryset):
             modeladmin.message_user(request, "تغییرات با موفقیت در سایت اصلی اعمال شد.", messages.SUCCESS)
         else:
             modeladmin.message_user(request, f"خطا در پاکسازی کش: {response.text}", messages.ERROR)
-    except requests.exceptions.RequestException as e:
-        modeladmin.message_user(request, f"عدم ارتباط با سرور فرانت‌اند. مطمئن شوید فرانت‌اند ران است.", messages.ERROR)
+    except requests.exceptions.RequestException:
+        modeladmin.message_user(request, "عدم ارتباط با سرور فرانت‌اند. مطمئن شوید فرانت‌اند ران است.", messages.ERROR)
 
 
 

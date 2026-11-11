@@ -3,7 +3,6 @@
 import { useState, useEffect, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import Cookies from "js-cookie";
 import Link from "next/link";
 import {
   Save, Image as ImageIcon, MapPin,
@@ -12,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toaster";
 
 export default function EditBusinessPage({
   params,
@@ -76,13 +76,10 @@ export default function EditBusinessPage({
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const token = Cookies.get("access_token");
         const [catsRes, locsRes, bizRes] = await Promise.all([
           api.get("/taxonomy/categories/").catch(() => ({ data: [] })),
           api.get("/taxonomy/locations/").catch(() => ({ data: [] })),
-          api.get(`/directory/businesses/${slug}/`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          api.get(`/directory/businesses/${slug}/`),
         ]);
 
         setCategories(catsRes.data || []);
@@ -108,7 +105,7 @@ export default function EditBusinessPage({
 
       } catch (error) {
         console.error("خطا در دریافت اطلاعات", error);
-        alert("مشکلی در دریافت اطلاعات کسب‌وکار به وجود آمد.");
+        toast.error("مشکلی در دریافت اطلاعات کسب‌وکار به وجود آمد.");
       } finally {
         setIsLoadingData(false);
       }
@@ -159,19 +156,12 @@ export default function EditBusinessPage({
     if (bannerFile) submitData.append("banner", bannerFile);
 
     try {
-      const token = Cookies.get("access_token");
       await api.patch(
         `/directory/businesses/${slug}/update/`,
         submitData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        },
       );
 
-      alert("ویرایش با موفقیت انجام شد!");
+      toast.success("ویرایش با موفقیت انجام شد!");
       router.push("/dashboard/owner");
     } catch (error: any) {
       console.error(error);
@@ -208,7 +198,7 @@ export default function EditBusinessPage({
             <h1 className="text-2xl font-black text-gray-900">ویرایش اطلاعات کسب‌وکار</h1>
             <p className="text-sm text-gray-500 mt-2">اطلاعات و ویترین عمومی شعبه خود را مدیریت کنید.</p>
           </div>
-          <Link href="/dashboard/owner" className="text-blue-600 hover:underline text-sm font-bold">
+          <Link href="/dashboard/owner" className="text-brand-600 hover:underline text-sm font-bold">
             بازگشت به داشبورد
           </Link>
         </header>
@@ -254,7 +244,7 @@ export default function EditBusinessPage({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="text-sm font-bold text-gray-800 mb-2 block">دسته‌بندی</label>
-                <select name="category" value={formData.category} onChange={handleChange} className={`w-full h-12 px-3 border border-input bg-gray-50/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 outline-none ${errors.category ? 'border-rose-500 bg-rose-50/50' : ''}`}>
+                <select name="category" value={formData.category} onChange={handleChange} className={`w-full h-12 px-3 border border-input bg-gray-50/50 rounded-xl text-sm focus:ring-2 focus:ring-brand-600 outline-none ${errors.category ? 'border-rose-500 bg-rose-50/50' : ''}`}>
                   <option value="">انتخاب کنید...</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -263,7 +253,7 @@ export default function EditBusinessPage({
               </div>
               <div>
                 <label className="text-sm font-bold text-gray-800 mb-2 block">شهر / منطقه</label>
-                <select name="location" value={formData.location} onChange={handleChange} className={`w-full h-12 px-3 border border-input bg-gray-50/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 outline-none ${errors.location ? 'border-rose-500 bg-rose-50/50' : ''}`}>
+                <select name="location" value={formData.location} onChange={handleChange} className={`w-full h-12 px-3 border border-input bg-gray-50/50 rounded-xl text-sm focus:ring-2 focus:ring-brand-600 outline-none ${errors.location ? 'border-rose-500 bg-rose-50/50' : ''}`}>
                   <option value="">انتخاب کنید...</option>
                   {locations.map((loc) => (
                     <option key={loc.id} value={loc.id}>{loc.name}</option>
@@ -286,7 +276,7 @@ export default function EditBusinessPage({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2"><Phone className="w-4 h-4 text-blue-600" /> تلفن تماس</label>
+                <label className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2"><Phone className="w-4 h-4 text-brand-600" /> تلفن تماس</label>
                 <Input name="public_phone" value={formData.public_phone} onChange={handleChange} dir="ltr" className={`h-12 text-left bg-gray-50/50 rounded-xl ${errors.public_phone ? 'border-rose-500 bg-rose-50/50' : ''}`} />
               </div>
               <div>
@@ -296,17 +286,17 @@ export default function EditBusinessPage({
             </div>
 
             <div>
-              <label className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2"><MapPin className="w-4 h-4 text-emerald-600" /> آدرس دقیق فیزیکی</label>
+              <label className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2"><MapPin className="w-4 h-4 text-brand-600" /> آدرس دقیق فیزیکی</label>
               <Textarea name="address" value={formData.address} onChange={handleChange} className={`h-20 bg-gray-50/50 rounded-xl ${errors.address ? 'border-rose-500 bg-rose-50/50' : ''}`} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-brand-50/50 p-4 rounded-xl border border-brand-100">
               <div>
-                <label className="text-xs font-bold text-blue-800 mb-1 block">طول جغرافیایی (Longitude)</label>
+                <label className="text-xs font-bold text-brand-800 mb-1 block">طول جغرافیایی (Longitude)</label>
                 <Input name="longitude" value={formData.longitude} onChange={handleChange} dir="ltr" className={`h-10 text-left bg-white ${errors.longitude ? 'border-rose-500' : ''}`} />
               </div>
               <div>
-                <label className="text-xs font-bold text-blue-800 mb-1 block">عرض جغرافیایی (Latitude)</label>
+                <label className="text-xs font-bold text-brand-800 mb-1 block">عرض جغرافیایی (Latitude)</label>
                 <Input name="latitude" value={formData.latitude} onChange={handleChange} dir="ltr" className={`h-10 text-left bg-white ${errors.latitude ? 'border-rose-500' : ''}`} />
               </div>
             </div>
@@ -318,7 +308,7 @@ export default function EditBusinessPage({
           <div className="space-y-6">
             <div>
               <label className="text-sm font-bold text-gray-800 mb-3 block">لوگوی برند (نسبت ۱:۱)</label>
-              <div onClick={() => logoInputRef.current?.click()} className={`border-2 border-dashed ${errors.logo ? 'border-rose-500 bg-rose-50' : 'border-gray-300 hover:border-blue-500 bg-gray-50/50'} rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden h-48`}>
+              <div onClick={() => logoInputRef.current?.click()} className={`border-2 border-dashed ${errors.logo ? 'border-rose-500 bg-rose-50' : 'border-gray-300 hover:border-brand-500 bg-gray-50/50'} rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden h-48`}>
                 <input type="file" ref={logoInputRef} onChange={(e) => handleFileChange(e, "logo")} accept="image/*" className="hidden" />
                 {logoPreview ? (
                   <img src={logoPreview} alt="Logo" className="absolute inset-0 w-full h-full object-contain bg-white" />
@@ -333,7 +323,7 @@ export default function EditBusinessPage({
 
             <div>
               <label className="text-sm font-bold text-gray-800 mb-3 block">بنر کاور (نسبت ۱۶:۹)</label>
-              <div onClick={() => bannerInputRef.current?.click()} className={`border-2 border-dashed ${errors.banner ? 'border-rose-500 bg-rose-50' : 'border-gray-300 hover:border-blue-500 bg-gray-50/50'} rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden h-64`}>
+              <div onClick={() => bannerInputRef.current?.click()} className={`border-2 border-dashed ${errors.banner ? 'border-rose-500 bg-rose-50' : 'border-gray-300 hover:border-brand-500 bg-gray-50/50'} rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden h-64`}>
                 <input type="file" ref={bannerInputRef} onChange={(e) => handleFileChange(e, "banner")} accept="image/*" className="hidden" />
                 {bannerPreview ? (
                   <img src={bannerPreview} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
@@ -348,7 +338,7 @@ export default function EditBusinessPage({
           </div>
 
           <div className="pt-6">
-            <Button type="submit" disabled={isLoading} className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg">
+            <Button type="submit" disabled={isLoading} className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-base shadow-lg">
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "ذخیره تغییرات نهایی"}
             </Button>
           </div>

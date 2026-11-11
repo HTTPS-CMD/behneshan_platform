@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
-import Cookies from "js-cookie";
 import Link from "next/link";
 import { Package, Plus, Trash2, Tag, Zap, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toaster";
 
 interface Product {
     id: number;
@@ -29,10 +29,7 @@ export default function OwnerProductsPage() {
 
     const fetchProducts = async () => {
         try {
-            const token = Cookies.get("access_token");
-            const res = await api.get("/directory/owner/products/", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get("/directory/owner/products/");
             setProducts(res.data.results || res.data);
         } catch (error) {
             console.error("خطا در دریافت محصولات:", error);
@@ -57,21 +54,18 @@ export default function OwnerProductsPage() {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const token = Cookies.get("access_token");
             await api.post("/directory/owner/products/", {
                 name: formData.name,
                 price: parseInt(formData.price),
                 discount_percentage: parseInt(formData.discount_percentage),
                 is_flash_sale: formData.is_flash_sale
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             
-            alert("محصول با موفقیت اضافه شد!");
+            toast.success("محصول با موفقیت اضافه شد!");
             setFormData({ name: "", price: "", discount_percentage: "0", is_flash_sale: false });
             fetchProducts();
         } catch (error) {
-            alert("خطا در ثبت محصول. لطفاً اطلاعات را بررسی کنید.");
+            toast.error("خطا در ثبت محصول. لطفاً اطلاعات را بررسی کنید.");
         } finally {
             setIsSubmitting(false);
         }
@@ -80,13 +74,10 @@ export default function OwnerProductsPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("آیا از حذف این محصول مطمئن هستید؟")) return;
         try {
-            const token = Cookies.get("access_token");
-            await api.delete(`/directory/owner/products/${id}/`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/directory/owner/products/${id}/`);
             fetchProducts();
         } catch (error) {
-            alert("خطا در حذف محصول.");
+            toast.error("خطا در حذف محصول.");
         }
     };
 
@@ -98,12 +89,12 @@ export default function OwnerProductsPage() {
                 <header className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                            <Package className="w-7 h-7 text-blue-600" />
+                            <Package className="w-7 h-7 text-brand-600" />
                             مدیریت محصولات و خدمات
                         </h1>
                         <p className="text-sm text-gray-500 mt-2">محصولات خود را اضافه کنید و تخفیف‌ها را مدیریت نمایید.</p>
                     </div>
-                    <Link href="/dashboard/owner" className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors bg-gray-50 px-4 py-2 rounded-xl font-bold text-sm">
+                    <Link href="/dashboard/owner" className="flex items-center gap-2 text-gray-500 hover:text-brand-600 transition-colors bg-gray-50 px-4 py-2 rounded-xl font-bold text-sm">
                         <ArrowRight className="w-4 h-4" />
                         بازگشت
                     </Link>
@@ -111,7 +102,7 @@ export default function OwnerProductsPage() {
 
                 {/* فرم ثبت محصول جدید */}
                 <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
-                    <h2 className="text-lg font-black text-slate-800 mb-6">افزودن محصول جدید</h2>
+                    <h2 className="text-lg font-black text-brand-800 mb-6">افزودن محصول جدید</h2>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="lg:col-span-2">
@@ -129,17 +120,17 @@ export default function OwnerProductsPage() {
                         </div>
 
                         <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-4 border-t border-gray-100 mt-4">
-                            <label className="flex items-center gap-3 cursor-pointer bg-amber-50 px-4 py-3 rounded-xl border border-amber-100 w-full md:w-auto">
+                            <label className="flex items-center gap-3 cursor-pointer bg-saffron-50 px-4 py-3 rounded-xl border border-saffron-100 w-full md:w-auto">
                                 <div className="relative flex items-center">
-                                    <input type="checkbox" name="is_flash_sale" checked={formData.is_flash_sale} onChange={handleChange} className="w-5 h-5 accent-amber-500 rounded cursor-pointer" />
+                                    <input type="checkbox" name="is_flash_sale" checked={formData.is_flash_sale} onChange={handleChange} className="w-5 h-5 accent-saffron-500 rounded cursor-pointer" />
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-black text-amber-900 flex items-center gap-1"><Zap className="w-4 h-4 text-amber-500 fill-amber-500"/> قرارگیری در فروش فوری</span>
-                                    <span className="text-xs font-bold text-amber-700/70">نمایش ویژه در لیست محصولات شگفت‌انگیز</span>
+                                    <span className="text-sm font-black text-saffron-900 flex items-center gap-1"><Zap className="w-4 h-4 text-saffron-700 fill-saffron-500"/> قرارگیری در فروش فوری</span>
+                                    <span className="text-xs font-bold text-saffron-700/70">نمایش ویژه در لیست محصولات شگفت‌انگیز</span>
                                 </div>
                             </label>
 
-                            <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 rounded-xl shadow-lg">
+                            <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto h-12 bg-brand-600 hover:bg-brand-700 text-white font-bold px-8 rounded-xl shadow-lg">
                                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Plus className="w-5 h-5 ml-2" /> ثبت محصول</>}
                             </Button>
                         </div>
@@ -150,7 +141,7 @@ export default function OwnerProductsPage() {
                 <div className="space-y-4">
                     <h3 className="text-lg font-black text-gray-800">لیست محصولات شما</h3>
                     {isLoading ? (
-                        <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+                        <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>
                     ) : products.length === 0 ? (
                         <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
                             <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
@@ -161,7 +152,7 @@ export default function OwnerProductsPage() {
                             {products.map((product) => (
                                 <div key={product.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 relative group overflow-hidden">
                                     {product.is_flash_sale && (
-                                        <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-black px-3 py-1 rounded-bl-xl flex items-center gap-1">
+                                        <div className="absolute top-0 right-0 bg-saffron-700 text-white text-[10px] font-black px-3 py-1 rounded-bl-xl flex items-center gap-1">
                                             <Zap className="w-3 h-3 fill-white" /> فروش فوری
                                         </div>
                                     )}
@@ -169,14 +160,14 @@ export default function OwnerProductsPage() {
                                         <h4 className="font-bold text-gray-800 text-lg mb-1 truncate">{product.name}</h4>
                                         {product.discount_percentage > 0 ? (
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm text-gray-400 line-through">{product.price.toLocaleString()}</span>
+                                                <span className="text-sm text-gray-500 line-through">{product.price.toLocaleString()}</span>
                                                 <span className="bg-rose-100 text-rose-700 text-xs font-black px-2 py-0.5 rounded-md">{product.discount_percentage}%</span>
                                             </div>
                                         ) : (
                                             <span className="text-sm text-gray-500 opacity-0 hidden md:block">بدون تخفیف</span>
                                         )}
-                                        <div className="text-blue-600 font-black text-xl mt-1">
-                                            {product.final_price.toLocaleString()} <span className="text-xs text-gray-400 font-bold">تومان</span>
+                                        <div className="text-brand-600 font-black text-xl mt-1">
+                                            {product.final_price.toLocaleString()} <span className="text-xs text-gray-500 font-bold">تومان</span>
                                         </div>
                                     </div>
                                     <div className="flex justify-end border-t border-gray-100 pt-3">

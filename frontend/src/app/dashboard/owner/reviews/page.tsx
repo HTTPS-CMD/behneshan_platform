@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Link from "next/link";
+import { toast } from "@/components/ui/toaster";
 
 interface Review {
   id: number;
@@ -70,7 +71,7 @@ export default function ManageReviewsPage() {
   const handleReplySubmit = async (reviewId: number) => {
     const text = replyText[reviewId];
     if (!text || text.trim() === "") {
-      alert("لطفاً متن پاسخ را وارد کنید.");
+      toast.info("لطفاً متن پاسخ را وارد کنید.");
       return;
     }
 
@@ -79,7 +80,7 @@ export default function ManageReviewsPage() {
       await api.post(`/directory/reviews/${reviewId}/reply/`, {
         owner_reply: text,
       });
-      alert("پاسخ شما با موفقیت ثبت شد.");
+      toast.success("پاسخ شما با موفقیت ثبت شد.");
       
       // به‌روزرسانی لیست نظرات برای نمایش پاسخ جدید
       setReviews((prevReviews) =>
@@ -94,7 +95,7 @@ export default function ManageReviewsPage() {
       setReplyText((prev) => ({ ...prev, [reviewId]: "" }));
     } catch (error) {
       console.error("خطا در ثبت پاسخ:", error);
-      alert("خطایی رخ داد. مجدداً تلاش کنید.");
+      toast.error("خطایی رخ داد. مجدداً تلاش کنید.");
     } finally {
       setIsSubmitting(null);
     }
@@ -116,7 +117,7 @@ export default function ManageReviewsPage() {
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100" dir="rtl">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold text-gray-800">مدیریت نظرات</h2>
-        <Link href="/dashboard/owner" className="text-blue-600 hover:underline text-sm font-semibold">
+        <Link href="/dashboard/owner" className="text-brand-600 hover:underline text-sm font-semibold">
           بازگشت به داشبورد اصلی
         </Link>
       </div>
@@ -135,7 +136,7 @@ export default function ManageReviewsPage() {
             <select
               value={selectedBusinessSlug}
               onChange={(e) => setSelectedBusinessSlug(e.target.value)}
-              className="w-full md:w-1/2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full md:w-1/2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               {businesses.map((b) => (
                 <option key={b.id} value={b.slug}>
@@ -160,11 +161,11 @@ export default function ManageReviewsPage() {
                       <span className="font-bold text-gray-800 bg-gray-100 px-3 py-1 rounded-lg text-sm" dir="ltr">
                         {review.user_phone.slice(0, 7) + "****"}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-500">
                         {new Date(review.created_at).toLocaleDateString("fa-IR")}
                       </span>
                     </div>
-                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+                    <span className="bg-saffron-100 text-saffron-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
                       ⭐ {review.rating}
                     </span>
                   </div>
@@ -176,9 +177,9 @@ export default function ManageReviewsPage() {
 
                   {/* بخش پاسخ مدیر */}
                   {review.owner_reply ? (
-                    <div className="bg-blue-50 border-r-4 border-blue-500 p-4 rounded-lg">
+                    <div className="bg-brand-50 border-r-4 border-brand-500 p-4 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-blue-800 text-sm">پاسخ شما:</span>
+                        <span className="font-bold text-brand-800 text-sm">پاسخ شما:</span>
                         {review.reply_date && (
                           <span className="text-xs text-gray-500">
                             {new Date(review.reply_date).toLocaleDateString("fa-IR")}
@@ -194,13 +195,13 @@ export default function ManageReviewsPage() {
                         value={replyText[review.id] || ""}
                         onChange={(e) => handleReplyChange(review.id, e.target.value)}
                         placeholder="پاسخ خود را به عنوان مدیر کسب‌وکار بنویسید..."
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-3"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm mb-3"
                       />
                       <div className="flex justify-end">
                         <button
                           onClick={() => handleReplySubmit(review.id)}
                           disabled={isSubmitting === review.id}
-                          className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:bg-gray-400"
+                          className="bg-brand-600 text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-brand-700 transition disabled:bg-gray-400"
                         >
                           {isSubmitting === review.id ? "در حال ارسال..." : "ثبت پاسخ"}
                         </button>

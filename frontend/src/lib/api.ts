@@ -1,68 +1,54 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { refreshSession } from '@/lib/auth';
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1',
 });
 
-// === ۱. اینترسپتور درخواست (Request) ===
-api.interceptors.request.use((config) => {
-  const token = Cookies.get('access_token');
+// === ۱. درخواست: افزودن access توکن (از حافظه) ===
+api.interceptors.request.use(async (config) => {
+  if (typeof window === 'undefined') return config; // رندر سمت سرور: درخواست عمومی
+
+  const state = useAuthStore.getState();
+  let token = state.accessToken;
+  // بعد از رفرش صفحه، access در حافظه نیست؛ اگر کاربر لاگین است اول نشست تمدید می‌شود
+  if (!token && state.isAuthenticated) {
+    token = await refreshSession();
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-}, (error) => {
-  return Promise.reject(error);
 });
 
-// === ۲. اینترسپتور پاسخ (Response) ===
+// === ۲. پاسخ: تمدید خودکار نشست در صورت 401 ===
 api.interceptors.response.use(
-  (response) => {
-    // اگر پاسخ موفق بود، خود پاسخ رو برگردون
-    return response;
-  },
+  (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-    // اگر خطای 401 (عدم دسترسی) گرفتیم و قبلاً این درخواست رو رفرش نکردیم (_retry)
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (typeof window !== 'undefined' && originalRequest && error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = Cookies.get('refresh_token');
 
-      if (refreshToken) {
-        try {
-          // درخواست به بک‌اند برای دریافت اکسس توکن جدید
-          // با axios خام (نه api) تا اگر رفرش هم 401 داد، اینترسپتور دوباره رفرش نکند و حلقه‌ی بی‌نهایت نسازد
-          const res = await axios.post('http://127.0.0.1:8000/api/v1/identity/token/refresh/', {
-            refresh: refreshToken,
-          });
-
-          const newAccessToken = res.data.access;
-          const currentRole = Cookies.get('user_role') || '';
-
-          // ذخیره توکن جدید در کوکی‌ها (برای ۷ روز طبق تنظیمات جنگو)
-          Cookies.set('access_token', newAccessToken, { expires: 7 });
-          
-          // آپدیت کردن استیت در Zustand
-          useAuthStore.getState().updateTokensAndRole(newAccessToken, refreshToken, currentRole);
-
-          // تغییر هدر درخواست اصلی با توکن جدید و ارسال مجدد
+      if (useAuthStore.getState().isAuthenticated) {
+        const newAccessToken = await refreshSession();
+        if (newAccessToken) {
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return api(originalRequest);
-          
-        } catch (refreshError) {
-          // اگر رفرش توکن هم منقضی شده بود -> خروج کامل کاربر از حساب
-          useAuthStore.getState().logout();
-          window.location.href = '/login';
-          return Promise.reject(refreshError);
         }
-      } else {
-        // اگر کلاً رفرش توکنی وجود نداشت -> خروج کامل کاربر
-        useAuthStore.getState().logout();
-        window.location.href = '/login';
       }
+
+      // نشست معتبری وجود ندارد -> خروج و انتقال به صفحه‌ی ورود
+      // کوکی httpOnly‌ی refresh هم باید پاک شود؛ وگرنه proxy کاربر را «لاگین‌شده» می‌داند و از /login
+      // دوباره به داشبورد برمی‌گرداند (حلقه‌ی بی‌نهایت)
+      try {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      } catch {
+        /* حتی اگر ناموفق بود، ادامه بده */
+      }
+      useAuthStore.getState().clearSession();
+      window.location.href = '/login';
     }
 
     return Promise.reject(error);

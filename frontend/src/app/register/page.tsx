@@ -5,11 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/store/useAuthStore";
+import { verifyOtp } from "@/lib/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Phone, User, ShieldCheck, ArrowRight, Loader2, TimerReset, IdCard, Store, Home, AlertOctagon, Lightbulb, X } from "lucide-react";
+import { Phone, User, ShieldCheck, ArrowRight, Loader2, IdCard, Store, Home, AlertOctagon, Lightbulb, X } from "lucide-react";
+import AuthSidePanel from "@/components/auth/AuthSidePanel";
+import OtpTimer from "@/components/auth/OtpTimer";
+import { dashboardPathFor } from "@/lib/authRedirect";
+import Logo from "@/components/brand/Logo";
 
 // تعریف ساختار دیتای ارور
 interface ErrorState {
@@ -20,6 +25,7 @@ interface ErrorState {
 
 export default function RegisterPage() {
     const router = useRouter();
+    const { isAuthenticated, role: userRole } = useAuthStore();
     const [step, setStep] = useState<1 | 2>(1);
     const [role, setRole] = useState<"CLIENT" | "BUSINESS_OWNER">("CLIENT");
     const [phoneNumber, setPhoneNumber] = useState("");
@@ -37,6 +43,11 @@ export default function RegisterPage() {
     const [referralError, setReferralError] = useState("");
     const [isValidating, setIsValidating] = useState(false);
 
+
+    // کاربر لاگین‌شده نباید فرم ثبت‌نام را ببیند (لایه‌ی دوم؛ لایه‌ی اول layout.tsx روی سرور است)
+    useEffect(() => {
+        if (isAuthenticated) router.replace(dashboardPathFor(userRole));
+    }, [isAuthenticated, userRole, router]);
 
     useEffect(() => {
         if (step === 2 && timeLeft > 0) {
@@ -126,7 +137,7 @@ export default function RegisterPage() {
         setCustomError(null); // پاک کردن ارورهای قبلی
 
         try {
-            await api.post("http://127.0.0.1:8000/api/v1/identity/request-otp/", {
+            await api.post("/identity/request-otp/", {
                 action: "register",
                 phone_number: data.phone_number,
                 national_id: data.national_id,
@@ -162,11 +173,11 @@ export default function RegisterPage() {
                 ...(referralData && { referral_code: referralCode }),
             };
 
-            const response = await api.post("http://127.0.0.1:8000/api/v1/identity/verify-otp/", payload);
+            // تأیید از مسیر امن Next: refresh توکن مستقیم در کوکی httpOnly ذخیره می‌شود (H6)
+            const response = await verifyOtp(payload);
 
             if (response.status === 200) {
-                const { access, refresh, role: userRole } = response.data;
-                useAuthStore.getState().login(access, refresh, userRole);
+                const { role: userRole } = response.data;
                 window.location.href = userRole === "ADMIN" ? "/admin-panel" : userRole === "BUSINESS_OWNER" ? "/dashboard/owner" : "/dashboard/client";
             }
         } catch (error) {
@@ -180,14 +191,15 @@ export default function RegisterPage() {
         <div className="min-h-screen flex w-full font-sans bg-gray-50/50" dir="rtl">
             <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 bg-white relative overflow-hidden overflow-y-auto">
 
-                <Link href="/" className="absolute top-6 right-6 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors z-20 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+                <Link href="/" className="absolute top-6 right-6 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-600 transition-colors z-20 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
                     <Home className="w-4 h-4" />
                     بازگشت به خانه
                 </Link>
 
-                <div className="w-full max-w-[420px] relative z-10 py-10">
+                <div className="w-full max-w-[420px] relative z-10 py-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="text-center mb-8">
-                        <h2 className="text-3xl font-black text-gray-900 tracking-tight">ایجاد حساب کاربری</h2>
+                        <div className="mb-5 flex justify-center"><Logo variant="mark" size={72} /></div>
+                        <h2 className="text-3xl font-black text-brand-900 tracking-tight">ایجاد حساب کاربری</h2>
                         <p className="text-sm text-gray-500 mt-2 font-medium">اطلاعات هویتی خود را جهت اعتبارسنجی وارد کنید.</p>
                     </div>
 
@@ -234,8 +246,8 @@ export default function RegisterPage() {
                                 <motion.form key="step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handleSubmit(onRequestOTP)} className="space-y-4">
 
                                     <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
-                                        <button type="button" onClick={() => { setRole("CLIENT"); setCustomError(null); }} className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${role === "CLIENT" ? "bg-white text-emerald-600 shadow-sm" : "text-gray-500"}`}>مشتری هستم</button>
-                                        <button type="button" onClick={() => { setRole("BUSINESS_OWNER"); setCustomError(null); }} className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${role === "BUSINESS_OWNER" ? "bg-white text-emerald-600 shadow-sm" : "text-gray-500"}`}>صاحب کسب‌وکارم</button>
+                                        <button type="button" onClick={() => { setRole("CLIENT"); setCustomError(null); }} className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${role === "CLIENT" ? "bg-white text-brand-600 shadow-sm" : "text-gray-500"}`}>مشتری هستم</button>
+                                        <button type="button" onClick={() => { setRole("BUSINESS_OWNER"); setCustomError(null); }} className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${role === "BUSINESS_OWNER" ? "bg-white text-brand-600 shadow-sm" : "text-gray-500"}`}>صاحب کسب‌وکارم</button>
                                     </div>
 
                                     <div className="space-y-1.5">
@@ -294,7 +306,7 @@ export default function RegisterPage() {
                                                     type="button"
                                                     onClick={validateReferralCode}
                                                     disabled={isValidating || !referralCode.trim()}
-                                                    className="h-12 bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-xl text-sm transition-colors disabled:opacity-50"
+                                                    className="h-12 bg-brand-800 hover:bg-slate-700 text-white px-4 rounded-xl text-sm transition-colors disabled:opacity-50"
                                                 >
                                                     {isValidating ? <Loader2 className="w-4 h-4 animate-spin" /> : "بررسی کد"}
                                                 </Button>
@@ -302,7 +314,7 @@ export default function RegisterPage() {
 
                                             {/* پیام‌های وضعیت کد معرف */}
                                             {referralData && (
-                                                <p className="text-emerald-600 text-xs font-bold mt-1.5">
+                                                <p className="text-brand-600 text-xs font-bold mt-1.5">
                                                     ✔️ {referralData.message}
                                                 </p>
                                             )}
@@ -324,40 +336,40 @@ export default function RegisterPage() {
                                                 setAcceptedTerms(e.target.checked);
                                                 if (e.target.checked) setCustomError(null); // وقتی تیک زد ارور پاک بشه
                                             }}
-                                            className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                                            className="w-4 h-4 text-brand-600 rounded border-gray-300 focus:ring-brand-500 cursor-pointer"
                                         />
                                         <label htmlFor="terms" className="text-sm font-bold text-gray-600 cursor-pointer">
-                                            من <a href={role === "CLIENT" ? "/terms/client" : "/terms/business"} target="_blank" className="text-emerald-600 hover:underline">قوانین و مقررات سایت</a> را مطالعه کرده و می‌پذیرم.
+                                            من <a href={role === "CLIENT" ? "/terms/client" : "/terms/business"} target="_blank" className="text-brand-600 hover:underline">قوانین و مقررات سایت</a> را مطالعه کرده و می‌پذیرم.
                                         </label>
                                     </div>
                                     {/* ----------------------------- */}
 
                                     <div className="pt-4">
-                                        <Button type="submit" disabled={isLoading} className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-base shadow-lg transition-all">
+                                        <Button type="submit" disabled={isLoading} className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-base shadow-lg transition-all">
                                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "اعتبارسنجی و ارسال کد"}
                                         </Button>
                                     </div>
 
                                     <p className="text-center text-sm font-bold text-gray-500 mt-6">
-                                        قبلاً ثبت‌نام کرده‌اید؟ <Link href="/login" className="text-emerald-600 hover:underline">وارد شوید</Link>
+                                        قبلاً ثبت‌نام کرده‌اید؟ <Link href="/login" className="text-brand-600 hover:underline">وارد شوید</Link>
                                     </p>
                                 </motion.form>
                             ) : (
                                 <motion.form key="step2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handleSubmit(onVerifyOTP)} className="space-y-5 mt-10">
                                     <div className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
                                         <div className="text-sm font-bold text-gray-700" dir="ltr">{phoneNumber}</div>
-                                        <button type="button" onClick={() => { setStep(1); setCustomError(null); }} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors">ویرایش شماره</button>
+                                        <button type="button" onClick={() => { setStep(1); setCustomError(null); }} className="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 px-3 py-1.5 rounded-lg transition-colors">ویرایش شماره</button>
                                     </div>
 
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center ml-1">
                                             <label className="text-sm font-bold text-gray-700">کد تایید ۶ رقمی</label>
-                                            <span className="text-xs font-bold flex items-center gap-1 text-gray-500"><TimerReset className="w-3.5 h-3.5" />{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}</span>
+                                            <OtpTimer seconds={timeLeft} />
                                         </div>
                                         <Input {...register("otp_code")} className="h-14 pr-12 pl-4 text-center tracking-[1em] bg-gray-50/50 rounded-xl text-xl font-black shadow-sm" dir="ltr" required maxLength={6} />
                                     </div>
 
-                                    <Button type="submit" disabled={isLoading || timeLeft === 0} className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-base shadow-lg">
+                                    <Button type="submit" disabled={isLoading || timeLeft === 0} className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-base shadow-lg">
                                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "ورود به سیستم"}
                                     </Button>
                                 </motion.form>
@@ -366,7 +378,7 @@ export default function RegisterPage() {
                     </div>
                 </div>
             </div>
-            <div className="hidden lg:flex w-1/2 bg-slate-900 bg-[url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=2000')] bg-cover bg-center" />
+            <AuthSidePanel />
         </div>
     );
 }

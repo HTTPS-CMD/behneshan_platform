@@ -25,8 +25,7 @@ class Business(models.Model):
     instagram_id = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    
-    phone_number = models.CharField(max_length=20, null=True, blank=True)
+
     website = models.URLField(null=True, blank=True)
     
     is_verified = models.BooleanField(default=False)
@@ -68,7 +67,7 @@ class BusinessRequest(models.Model):
     REQUEST_TYPES = (
         ('LADDER', 'درخواست نردبان'),
         ('SMS', 'تبلیغات پیامکی'),
-        ('FEATURED', 'معرفی ویژه روز در چارسوق'),
+        ('FEATURED', 'معرفی ویژه روز در چهارسوق'),
     )
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='requests')
     request_type = models.CharField(max_length=20, choices=REQUEST_TYPES, verbose_name="نوع درخواست")

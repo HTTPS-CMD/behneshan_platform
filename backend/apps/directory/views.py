@@ -1,28 +1,40 @@
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from django.db import transaction as db_transaction
-from django.db.migrations import serializer
-from django.utils import timezone
 from datetime import timedelta
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.decorators import action
-from django.shortcuts import render
-from rest_framework.views import APIView
-from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListCreateAPIView, ValidationError
-from rest_framework.response import Response
-from rest_framework import status, generics, viewsets
-from django.shortcuts import get_object_or_404
-from .models import Business, CampaignUsage, DiscountCampaign, Review, DiscountService, TransactionLog, UserBusinessVisit, SubscriptionPlan, CustomerProfile
-from .serializers import BusinessListSerializer, BusinessCreateSerializer, BusinessSerializer, BusinessUpdateSerializer, CampaignUsageSerializer, DiscountCampaignSerializer, PublicStorySerializer, ReviewSerializer, TransactionLogSerializer, ClientCampaignUsageSerializer, SubscriptionPlanSerializer, AdminTransactionLogSerializer, UserBusinessVisitSerializer
-from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
-from rest_framework.generics import ListAPIView
-from rest_framework.pagination import PageNumberPagination
-from .permissions import IsOwner, IsBusinessOwnerRole
-from rest_framework_simplejwt.tokens import RefreshToken
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
 from django.contrib.auth import get_user_model
-from django.db.models import Avg
 from django.db import transaction
+from django.db.models import Avg
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework import generics, permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView, UpdateAPIView, ValidationError
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from apps.identity.tokens import issue_tokens
+
 from apps.taxonomy.models import Category, Location
-from .models import Business, DiscountCampaign, Product
+
+from .models import (
+    Business, BusinessRequest, CampaignUsage, CustomerProfile, DiscountCampaign, DiscountService, Product,
+    Review, SiteContent, Story, SubscriptionPlan, TransactionLog, UserBusinessVisit,
+)
+from .permissions import IsBusinessOwnerRole, IsOwner
+from .serializers import (
+    AdminTransactionLogSerializer, BusinessCreateSerializer, BusinessListSerializer, BusinessRequestSerializer,
+    BusinessPublicSerializer, BusinessSerializer, BusinessUpdateSerializer, CampaignUsageSerializer, ClientCampaignUsageSerializer,
+    DiscountCampaignSerializer, ProductSerializer, PublicStorySerializer, ReviewSerializer, SiteContentSerializer,
+    StorySerializer, SubscriptionPlanSerializer, TransactionLogSerializer, UserBusinessVisitSerializer,
+)
+from .stats import owner_analytics
+from .utils import get_owner_business
+from .crm import (
+    IsVerifiedBusinessOwner, consume_verification_token, create_verification_token, mask_name,
+    verify_purchase_code,
+)
+from .serializers import mask_phone
 
 User = get_user_model()
 
@@ -102,12 +114,9 @@ class BusinessCreateView(APIView):
                 request.user.role = 'BUSINESS_OWNER'
                 request.user.save()
                 
-                refresh = RefreshToken.for_user(request.user)
-                response_data['new_tokens'] = {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                    'role': request.user.role
-                }
+                # refresh توکن دیگر به مرورگر داده نمی‌شود (H6)؛ فرانت نشست را از مسیر امن /api/auth/refresh تمدید می‌کند
+                tokens = issue_tokens(request.user)
+                response_data['new_tokens'] = {'access': tokens['access'], 'role': tokens['role']}
                 
             return Response(response_data, status=status.HTTP_201_CREATED)
             
@@ -123,7 +132,7 @@ class UserBusinessListView(APIView):
     
 class BusinessDetailView(RetrieveAPIView):
     queryset = Business.objects.all()
-    serializer_class = BusinessSerializer
+    serializer_class = BusinessPublicSerializer
     lookup_field = 'slug'
     
     def get(self, request, *args, **kwargs):
@@ -181,20 +190,6 @@ class ReplyToReviewView(APIView):
         review.save()
         return Response({"message": "پاسخ شما با موفقیت ثبت شد."}, status=status.HTTP_200_OK)
     
-class BusinessAnalyticsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        data = [
-            { "name": "هفته اول", "views": 120, "engagement": 45 },
-            { "name": "هفته دوم", "views": 150, "engagement": 60 },
-            { "name": "هفته سوم", "views": 180, "engagement": 75 },
-            { "name": "هفته چهارم", "views": 210, "engagement": 90 },
-            { "name": "هفته پنجم", "views": 250, "engagement": 110 },
-            { "name": "هفته ششم", "views": 300, "engagement": 140 },
-        ]
-        return Response(data)
-    
 class ValidateCampaignCodeView(APIView):
     permission_classes = [AllowAny] 
 
@@ -226,7 +221,7 @@ class OwnerCampaignViewSet(viewsets.ModelViewSet):
         return DiscountCampaign.objects.filter(business__owner=self.request.user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        user_business = self.request.user.businesses.first()
+        user_business = get_owner_business(self.request.user)
         if not user_business:
             raise ValidationError({"error": "شما هنوز هیچ کسب‌وکاری ثبت نکرده‌اید."})
         serializer.save(business=user_business)
@@ -255,97 +250,62 @@ class OwnerRedeemDiscountView(APIView):
         usage.save()
         return Response({"message": "تخفیف با موفقیت اعمال و سوزانده شد."}, status=status.HTTP_200_OK)
     
-class BusinessProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
-
-    def get(self, request):
-        business = request.user.businesses.first()
-        if not business:
-            return Response({"error": "هنوز کسب‌وکاری برای شما ثبت نشده است."}, status=404)
-        serializer = BusinessSerializer(business)
-        return Response(serializer.data)
-
-    def patch(self, request):
-        business = request.user.businesses.first()
-        if not business:
-            return Response({"error": "هنوز کسب‌وکاری برای شما ثبت نشده است."}, status=404)
-        # فقط فیلدهای مجاز (نه تایید، امتیاز، مالک و ...) قابل ویرایش هستند
-        serializer = BusinessUpdateSerializer(business, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(BusinessSerializer(business).data)
-        return Response(serializer.errors, status=400)
-    
 class OwnerAnalyticsView(APIView):
-    permission_classes = [IsAuthenticated]
+    """
+    آمار واقعی کسب‌وکارهای صاحب حساب (جایگزین داده‌ی ساختگی قبلی).
+    ?days=7|30|90  (پیش‌فرض ۳۰)
+    """
+    permission_classes = [IsAuthenticated, IsBusinessOwnerRole]
 
     def get(self, request):
-        # get() برای کاربری با بیش از یک کسب‌وکار خطای 500 می‌داد
-        business = request.user.businesses.first()
-        if not business:
-            return Response({
-                "total_views": 0,
-                "total_engagements": 0,
-                "average_rating": 0,
-                "campaign_uses": 0,
-            })
+        try:
+            days = int(request.query_params.get('days', 30))
+        except (TypeError, ValueError):
+            days = 30
+        return Response(owner_analytics(request.user, days))
 
-        campaigns = DiscountCampaign.objects.filter(business=business)
-        campaign_uses = CampaignUsage.objects.filter(campaign__in=campaigns).count()
+
+class VerifyCustomerDiscountView(APIView):
+    # H4: فقط کسب‌وکار تأییدشده، و فقط با کد خرید یک‌بارمصرف مشتری
+    permission_classes = [IsAuthenticated, IsVerifiedBusinessOwner]
+
+    def post(self, request):
+        customer, business, error = verify_purchase_code(request)
+        if error:
+            return error
+
+        discount_data = DiscountService.get_best_discount(customer, business)
+
+        user_discount = 0
+        if hasattr(customer, 'customer_profile') and customer.customer_profile.has_active_subscription:
+            user_discount = customer.customer_profile.active_plan.base_discount_percentage
+
+        campaign_discount = 0
+        valid_usage = CampaignUsage.objects.filter(client=customer, campaign__business=business, is_redeemed=False).order_by('-campaign__discount_percent').first()
+        if valid_usage:
+            campaign_discount = valid_usage.campaign.discount_percent or 0
 
         return Response({
-            "total_views": business.views_count, 
-            "total_engagements": business.engagement_count, 
-            "average_rating": business.average_rating, 
-            "campaign_uses": campaign_uses,
-        })
-        
-class VerifyCustomerDiscountView(APIView):
-    permission_classes = [IsAuthenticated, IsBusinessOwnerRole]
+            "customer_name": mask_name(customer.full_name),
+            "phone_number": mask_phone(customer.phone_number),
+            "discount_percentage": discount_data['final_discount'],
+            "discount_source": discount_data['source'],
+            "vip_discount": user_discount,
+            "campaign_discount": campaign_discount,
+            "verification_token": create_verification_token(customer, business),
+        }, status=status.HTTP_200_OK)
 
-    def post(self, request):
-        phone_number = request.data.get('phone_number')
-        if not phone_number:
-            return Response({"error": "شماره موبایل الزامی است."}, status=status.HTTP_400_BAD_REQUEST)
-        business = request.user.businesses.first()
-        if not business:
-            return Response({"error": "کسب و کاری یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
-            
-        try:
-            customer = User.objects.get(phone_number=phone_number)
-            discount_data = DiscountService.get_best_discount(customer, business)
-            
-            user_discount = 0
-            if hasattr(customer, 'customer_profile') and customer.customer_profile.has_active_subscription:
-                user_discount = customer.customer_profile.active_plan.base_discount_percentage
-                
-            campaign_discount = 0
-            valid_usage = CampaignUsage.objects.filter(client=customer, campaign__business=business, is_redeemed=False).order_by('-campaign__discount_percent').first()
-            if valid_usage:
-                campaign_discount = valid_usage.campaign.discount_percent or 0
-
-            return Response({
-                "customer_name": customer.full_name or "کاربر ناشناس",
-                "phone_number": customer.phone_number,
-                "discount_percentage": discount_data['final_discount'],
-                "discount_source": discount_data['source'],
-                "vip_discount": user_discount,
-                "campaign_discount": campaign_discount
-            }, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({"error": "مشتری با این شماره یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
 
 class RecordTransactionView(APIView):
-    permission_classes = [IsAuthenticated, IsBusinessOwnerRole]
+    permission_classes = [IsAuthenticated, IsVerifiedBusinessOwner]
 
     def post(self, request):
-        phone_number = request.data.get('phone_number')
+        token = request.data.get('verification_token')
         original_amount = request.data.get('original_amount')
-        
-        if not phone_number or not original_amount:
-            return Response({"error": "اطلاعات ناقص است."}, status=status.HTTP_400_BAD_REQUEST)
-            
+
+        if not token or not original_amount:
+            return Response({"error": "اطلاعات ناقص است. ابتدا مشتری را با کد خرید تأیید کنید."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             original_amount = Decimal(str(original_amount))
         except InvalidOperation:
@@ -353,17 +313,17 @@ class RecordTransactionView(APIView):
         if original_amount <= 0:
             return Response({"error": "مبلغ باید بیشتر از صفر باشد."}, status=status.HTTP_400_BAD_REQUEST)
 
-        business = request.user.businesses.first()
+        business = get_owner_business(request.user)
         if not business:
             return Response({"error": "کسب و کاری یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
 
-        try:
-            customer = User.objects.get(phone_number=phone_number)
-        except User.DoesNotExist:
-            return Response({"error": "مشتری با این شماره یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
+        # توکن یک‌بارمصرف است: هر تأیید مشتری فقط یک تراکنش
+        customer = consume_verification_token(token, business)
+        if not customer:
+            return Response({"error": "تأیید مشتری منقضی شده است. دوباره کد خرید را از مشتری بگیرید."}, status=status.HTTP_400_BAD_REQUEST)
 
         # ثبت تراکنش و سوزاندن کد باید با هم انجام شوند تا یک کد دو بار استفاده نشود
-        with db_transaction.atomic():
+        with transaction.atomic():
             discount_data = DiscountService.get_best_discount(customer, business)
             discount_pct = discount_data['final_discount']
 
@@ -396,7 +356,7 @@ class OwnerCustomersListView(APIView):
     permission_classes = [IsAuthenticated, IsBusinessOwnerRole]
 
     def get(self, request):
-        business = request.user.businesses.first()
+        business = get_owner_business(request.user)
         if not business:
             return Response({"error": "شما کسب‌وکاری ندارید."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -471,7 +431,7 @@ class ClaimCampaignView(APIView):
             return Response({"error": "آیدی کمپین نامعتبر است."}, status=status.HTTP_400_BAD_REQUEST)
         
         # قفل ردیف کمپین تا درخواست‌های هم‌زمان نتوانند از سقف ظرفیت رد شوند
-        with db_transaction.atomic():
+        with transaction.atomic():
             campaign = get_object_or_404(DiscountCampaign.objects.select_for_update(), id=campaign_id, is_active=True)
 
             # unique_together اجازه‌ی دو رکورد برای یک مشتری نمی‌دهد، پس هر رکوردی (حتی استفاده‌شده) را چک می‌کنیم
@@ -511,8 +471,6 @@ class AdminTransactionLogListView(generics.ListAPIView):
     permission_classes = [IsAdminUser]
     
     
-from .models import SiteContent
-from .serializers import SiteContentSerializer
 
 # API عمومی برای نمایش در صفحات سایت (بدون نیاز به لاگین)
 class PublicSiteContentView(APIView):
@@ -554,11 +512,6 @@ class AdminSiteContentView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     
-from rest_framework import generics, permissions
-from django.utils import timezone
-from datetime import timedelta
-from .models import Story, Business
-from .serializers import StorySerializer
 
 # API 1: مخصوص پنل صاحب کسب‌وکار (آپلود، لیست استوری‌های خودش، حذف)
 class BusinessOwnerStoryView(generics.ListCreateAPIView):
@@ -589,32 +542,6 @@ class PublicActiveStoriesView(generics.ListAPIView):
     
     
 
-from django.db.models import Sum
-from .models import Product, BusinessRequest
-from .serializers import ProductSerializer, BusinessRequestSerializer
-
-# گزارش فروش روزانه، ماهانه، سالانه و تعداد دنبال‌کنندگان
-class BusinessSalesSummaryView(APIView):
-    permission_classes = [IsAuthenticated, IsBusinessOwnerRole]
-
-    def get(self, request):
-        business = request.user.businesses.first()
-        if not business:
-            return Response({"error": "کسب‌وکاری یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
-
-        now = timezone.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        month_start = now - timedelta(days=30)
-        year_start = now - timedelta(days=365)
-
-        txs = TransactionLog.objects.filter(business=business)
-
-        return Response({
-            "daily_sales": txs.filter(created_at__gte=today_start).aggregate(total=Sum('final_amount'))['total'] or 0,
-            "monthly_sales": txs.filter(created_at__gte=month_start).aggregate(total=Sum('final_amount'))['total'] or 0,
-            "yearly_sales": txs.filter(created_at__gte=year_start).aggregate(total=Sum('final_amount'))['total'] or 0,
-            "followers_count": business.followers.count(),
-        }, status=status.HTTP_200_OK)
 
 # مدیریت محصولات و تخفیف‌ها
 class BusinessProductViewSet(viewsets.ModelViewSet):
@@ -622,13 +549,13 @@ class BusinessProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsBusinessOwnerRole]
 
     def get_queryset(self):
-        business = self.request.user.businesses.first()
+        business = get_owner_business(self.request.user)
         if not business:
             return Product.objects.none()
         return Product.objects.filter(business=business).order_by('-created_at')
 
     def perform_create(self, serializer):
-        business = self.request.user.businesses.first()
+        business = get_owner_business(self.request.user)
         if not business:
             raise ValidationError({"error": "ابتدا باید یک کسب‌وکار ثبت کنید."})
         serializer.save(business=business)
@@ -642,7 +569,7 @@ class BusinessRequestListCreateView(ListCreateAPIView):
         return BusinessRequest.objects.filter(business__owner=self.request.user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        business = self.request.user.businesses.first()
+        business = get_owner_business(self.request.user)
         if not business:
             raise ValidationError({"error": "کسب‌وکاری یافت نشد."})
         serializer.save(business=business)

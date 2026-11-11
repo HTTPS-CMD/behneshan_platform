@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
-import Cookies from "js-cookie";
 import Link from "next/link";
 import { Heart, Loader2, Store, MapPin, Star, ArrowRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toaster";
 
 interface Business {
     id: string;
@@ -24,10 +24,7 @@ export default function ClientFavoritesPage() {
 
     const fetchFavorites = async () => {
         try {
-            const token = Cookies.get("access_token");
-            const res = await api.get("/directory/client/favorite-businesses/", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get("/directory/client/favorite-businesses/");
             setFavorites(res.data.results || res.data);
         } catch (error) {
             console.error("خطا در دریافت لیست علاقه‌مندی‌ها:", error);
@@ -43,13 +40,10 @@ export default function ClientFavoritesPage() {
     const handleRemoveFavorite = async (slug: string, id: string) => {
         setTogglingId(id);
         try {
-            const token = Cookies.get("access_token");
-            await api.post(`/directory/businesses/${slug}/toggle-favorite/`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.post(`/directory/businesses/${slug}/toggle-favorite/`, {});
             setFavorites(prev => prev.filter(biz => biz.id !== id));
         } catch (error) {
-            alert("خطا در حذف از علاقه‌مندی‌ها.");
+            toast.error("خطا در حذف از علاقه‌مندی‌ها.");
         } finally {
             setTogglingId(null);
         }
@@ -67,7 +61,7 @@ export default function ClientFavoritesPage() {
                         </h1>
                         <p className="text-sm text-gray-500 mt-2">لیست کسب‌وکارهایی که برای دسترسی سریع‌تر نشان کرده‌اید.</p>
                     </div>
-                    <Link href="/dashboard/client" className="flex items-center gap-2 text-slate-500 hover:text-rose-600 transition-colors bg-gray-50 px-4 py-2 rounded-xl font-bold text-sm">
+                    <Link href="/dashboard/client" className="flex items-center gap-2 text-gray-500 hover:text-rose-600 transition-colors bg-gray-50 px-4 py-2 rounded-xl font-bold text-sm">
                         <ArrowRight className="w-4 h-4" />
                         بازگشت
                     </Link>
@@ -90,7 +84,7 @@ export default function ClientFavoritesPage() {
                                             {biz.logo ? (
                                                 <img src={biz.logo} alt={biz.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-xl font-black text-gray-400">
+                                                <div className="w-full h-full flex items-center justify-center text-xl font-black text-gray-500">
                                                     {biz.name.charAt(0)}
                                                 </div>
                                             )}
@@ -108,14 +102,14 @@ export default function ClientFavoritesPage() {
                                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
                                         <div className="flex flex-col gap-1 text-xs font-bold text-gray-500">
                                             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {biz.location?.name}</span>
-                                            <span className="flex items-center gap-1 text-amber-500"><Star className="w-3.5 h-3.5 fill-amber-500" /> {biz.average_rating} ({biz.review_count})</span>
+                                            <span className="flex items-center gap-1 text-saffron-700"><Star className="w-3.5 h-3.5 fill-saffron-500" /> {biz.average_rating} ({biz.review_count})</span>
                                         </div>
                                         <Button 
                                             variant="ghost" 
                                             size="sm"
                                             onClick={() => handleRemoveFavorite(biz.slug, biz.id)}
                                             disabled={togglingId === biz.id}
-                                            className="text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                                            className="text-gray-500 hover:text-rose-600 hover:bg-rose-50"
                                         >
                                             {togglingId === biz.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                         </Button>

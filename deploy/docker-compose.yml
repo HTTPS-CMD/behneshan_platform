@@ -1,0 +1,84 @@
+# استقرار چهارسوق (4sogh.shop) — Nginx Proxy Manager جلوی این مجموعه است.
+# نکته: «name:» نگذار و compose را از همان پوشه‌ی قبلی اجرا کن تا نام شبکه (…_default) عوض نشود
+# و NPM همچنان بتواند 4sogh_frontend و 4sogh_backend را پیدا کند.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: 4sogh_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Tehran
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # هیچ پورتی به بیرون باز نمی‌شود؛ فقط کانتینرهای همین شبکه به دیتابیس می‌رسند.
+
+  redis:
+    image: redis:7-alpine
+    container_name: 4sogh_redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    container_name: 4sogh_backend
+    restart: always
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/media:/app/media      # عکس‌های آپلودشده‌ی قبلی همان‌جا می‌مانند
+      - static_data:/app/staticfiles
+    ports:
+      - "127.0.0.1:8000:8000"           # فقط برای تست روی خود سرور
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_MEDIA_URL: ${NEXT_PUBLIC_MEDIA_URL}
+    container_name: 4sogh_frontend
+    restart: always
+    environment:
+      NODE_ENV: production
+      BACKEND_INTERNAL_URL: ${BACKEND_INTERNAL_URL}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
+      REVALIDATION_SECRET: ${REVALIDATION_SECRET}
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  # سرو فایل‌های media و static (چون با DEBUG=False خود جنگو این‌ها را سرو نمی‌کند)
+  static:
+    image: nginx:alpine
+    container_name: 4sogh_static
+    restart: always
+    volumes:
+      - ./nginx-static.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./backend/media:/srv/media:ro
+      - static_data:/srv/static:ro
+
+volumes:
+  pgdata:
+  redisdata:
+  static_data:
