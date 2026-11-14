@@ -1,6 +1,6 @@
 import uuid
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from django.http import HttpResponse
@@ -345,6 +345,18 @@ class PurchaseViewSet(OwnerMixin, mixins.ListModelMixin, mixins.RetrieveModelMix
         return Response(calc)
 
     def create(self, request, *args, **kwargs):
+        # دستگاه (کارت‌خوان) با client_ref درخواست را امن تکرار می‌کند: خرید تکراری ثبت نمی‌شود
+        client_ref = request.data.get('client_ref') or None
+        if client_ref:
+            try:
+                client_ref = uuid.UUID(str(client_ref))
+            except ValueError:
+                return _error(LoyaltyError("client_ref نامعتبر است."))
+            done = Purchase.objects.filter(business=self.business, client_ref=client_ref).first()
+            if done:
+                return Response(self.get_serializer(done).data, status=status.HTTP_200_OK)
+        source = Purchase.Source.POS if request.data.get('source') == 'POS' else Purchase.Source.PANEL
+        pos_reference = str(request.data.get('pos_reference') or '').strip()
         try:
             customer, verified, token, amount, use_credit, branch, line, payment = self._resolve_input(request)
         except LoyaltyError as exc:
@@ -363,7 +375,14 @@ class PurchaseViewSet(OwnerMixin, mixins.ListModelMixin, mixins.RetrieveModelMix
                 payment_method=payment, use_credit=use_credit, verified=verified, created_by=request.user,
                 note=(request.data.get('note') or '').strip(),
                 gift_reward_ids=request.data.get('gift_reward_ids') or None,
+                source=source, client_ref=client_ref, pos_reference=pos_reference,
             )
+        except IntegrityError:
+            # دو درخواست هم‌زمان با یک client_ref: دومی رد می‌شود و خرید اولی برگردانده می‌شود
+            done = Purchase.objects.filter(business=self.business, client_ref=client_ref).first() if client_ref else None
+            if done:
+                return Response(self.get_serializer(done).data, status=status.HTTP_200_OK)
+            raise
         except LoyaltyError as exc:
             if token:
                 create_verification(customer, token)  # خطای فرم؛ تأیید برای تلاش دوباره برمی‌گردد

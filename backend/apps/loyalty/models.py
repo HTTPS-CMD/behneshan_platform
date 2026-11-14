@@ -186,6 +186,7 @@ class Purchase(models.Model):
         PANEL = 'PANEL', 'پنل فروشنده'
         IMPORT = 'IMPORT', 'ورود از اکسل'
         LEGACY = 'LEGACY', 'پذیرش مشتری (قدیمی)'
+        POS = 'POS', 'کارت‌خوان'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business = models.ForeignKey('directory.Business', on_delete=models.CASCADE, related_name='loyalty_purchases')
@@ -205,6 +206,11 @@ class Purchase(models.Model):
     verified = models.BooleanField(default=False, verbose_name="تأیید با کد خرید مشتری")
     source = models.CharField(max_length=10, choices=Source.choices, default=Source.PANEL)
     note = models.CharField(max_length=500, blank=True)
+    client_ref = models.UUIDField(
+        null=True, blank=True, verbose_name="شناسه‌ی یکتای درخواست دستگاه",
+        help_text="برای جلوگیری از ثبت دوباره‌ی یک تراکنش وقتی دستگاه درخواست را تکرار می‌کند",
+    )
+    pos_reference = models.CharField(max_length=64, blank=True, verbose_name="کد پیگیری کارت‌خوان")
     transaction_log = models.OneToOneField(
         'directory.TransactionLog', on_delete=models.SET_NULL, null=True, blank=True, related_name='loyalty_purchase',
     )
@@ -215,6 +221,10 @@ class Purchase(models.Model):
     class Meta:
         ordering = ['-purchased_at']
         indexes = [models.Index(fields=['business', 'purchased_at'])]
+        constraints = [models.UniqueConstraint(
+            fields=['business', 'client_ref'], condition=models.Q(client_ref__isnull=False),
+            name='uniq_purchase_client_ref',
+        )]
         verbose_name = "تراکنش باشگاه"
         verbose_name_plural = "تراکنش‌های باشگاه"
 
