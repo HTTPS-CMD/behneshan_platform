@@ -180,7 +180,7 @@ class PurchaseSerializer(serializers.ModelSerializer):
             'branch', 'branch_name', 'line', 'line_name', 'payment_method', 'payment_method_display',
             'original_amount', 'discount_percent', 'discount_source', 'discount_source_display',
             'discount_amount', 'credit_used', 'final_amount', 'cashback_amount', 'verified',
-            'source', 'note', 'purchased_at', 'purchased_jalali', 'purchased_time',
+            'source', 'note', 'client_ref', 'pos_reference', 'purchased_at', 'purchased_jalali', 'purchased_time',
         ]
 
     def get_purchased_jalali(self, obj):

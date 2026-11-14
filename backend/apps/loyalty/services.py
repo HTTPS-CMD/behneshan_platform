@@ -265,7 +265,7 @@ def preview_purchase(business, customer, amount, line=None, use_credit=0, verifi
 def record_purchase(
     *, business, customer, amount, branch=None, line=None, payment_method=Purchase.PaymentMethod.CASH,
     use_credit=0, verified=False, created_by=None, source=Purchase.Source.PANEL, note='', purchased_at=None,
-    gift_reward_ids=None, apply_incentives=True,
+    gift_reward_ids=None, apply_incentives=True, client_ref=None, pos_reference='',
 ):
     """
     ثبت خرید + کم کردن اعتبار مصرف‌شده + واریز کش‌بک + طرح‌های تشویقی، همه در یک تراکنش دیتابیس.
@@ -300,6 +300,7 @@ def record_purchase(
             credit_used=calc['credit_used'], final_amount=calc['final_amount'],
             cashback_amount=calc['cashback_amount'], verified=verified, source=source,
             note=(note or '')[:500], created_by=created_by, purchased_at=purchased_at or timezone.now(),
+            client_ref=client_ref, pos_reference=(pos_reference or '')[:64],
         )
 
         if calc['credit_used']:
